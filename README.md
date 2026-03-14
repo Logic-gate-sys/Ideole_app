@@ -121,11 +121,3 @@
 * Real-time updates via Socket.io
 * Everything else (communities, messaging, originality AI, sessions) can be **V2**
 ---
-
-
-git init
-git checkout -b project-setup
-git add .
-git commit -m "first commit"
-git remote add origin git@github.com:Logic-gate-sys/Ideole_app.git
-git push -u origin project-setup

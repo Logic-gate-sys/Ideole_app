@@ -1,97 +1,88 @@
-
+// schema.prisma
 generator client {
-  provider = "prisma-client"
-  output   = "./generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-
-// ----------------------- SCHEMAS --------------------------
-
+// Users
 model User {
-  id               String   @id @default(uuid())
-  email            String   @unique
-  name             String
-  password         String
-  role             Role     @default(CUSTOMER)
-  dietaryLifestyle String[] // Postgres supports native scalar lists (arrays)
-  allergies        String[]
-  orders           Order[]
-  createdAt        DateTime @default(now())
-}
-
-enum Role {
-  CUSTOMER
-  STAFF
-  ADMIN
-}
-
-model Cafeteria {
-  id             String         @id @default(uuid())
-  name           String         @unique
-  isOpen         Boolean        @default(true)
-  capacityStatus CapacityStatus @default(GREEN)
-  menuItems      MenuItem[]
-  orders         Order[]
-}
-
-enum CapacityStatus {
-  GREEN
-  YELLOW
-  RED
-}
-
-model MenuItem {
-  id           String    @id @default(uuid())
-  cafeteriaId  String
+  id           String   @id @default(uuid())
   name         String
-  description  String?
-  price        Float
-  category     String
-  isAvailable  Boolean   @default(true)
-  allergenTags String[]
-  imageUrl     String?
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  cafeteria    Cafeteria @relation(fields: [cafeteriaId], references: [id])
+  ideas        Idea[]        // ideas created by user
+  ratings      IdeaRating[]  // ratings user gave
+  comments     IdeaComment[] // comments user wrote
+  invites      IdeaInvite[]  // invited to review ideas
 }
 
-model Order {
-  id           String      @id @default(uuid())
-  userId       String
-  user         User        @relation(fields: [userId], references: [id])
-  cafeteriaId  String
-  totalAmount  Float
-  status       OrderStatus @default(PENDING_PAYMENT)
-  isPaid       Boolean     @default(false)
-  pickupWindow DateTime
-  qrCodeSecret String      @unique
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+// Ideas
+model Idea {
+  id          String        @id @default(uuid())
+  title       String
+  problemText String
+  solutionText String
+  category    String
+  visibility  Visibility    @default(PRIVATE)
+  isPublic    Boolean       @default(false)
+  creator     User          @relation(fields: [creatorId], references: [id])
+  creatorId   String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  items        OrderItem[]
-  cafeteria    Cafeteria   @relation(fields: [cafeteriaId], references: [id])
+  ratings     IdeaRating[]
+  comments    IdeaComment[]
+  invites     IdeaInvite[]
 }
 
-// In Postgres, OrderItem must be a model to support relations
-model OrderItem {
-  id         String @id @default(uuid())
-  orderId    String
-  menuItemId String
-  name       String
-  price      Float
-  quantity   Int
-
-  order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+enum Visibility {
+  PRIVATE
+  COMMUNITY
+  PUBLIC
 }
 
-enum OrderStatus {
-  PENDING_PAYMENT
-  RECEIVED
-  PREPPING
-  READY
-  COMPLETED
-  CANCELLED
+// Invitations for review
+model IdeaInvite {
+  id         String   @id @default(uuid())
+  idea       Idea     @relation(fields: [ideaId], references: [id])
+  ideaId     String
+  reviewer   User     @relation(fields: [reviewerId], references: [id])
+  reviewerId String
+  status     InviteStatus @default(PENDING)
+  createdAt  DateTime @default(now())
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+}
+
+// Ratings
+model IdeaRating {
+  id         String   @id @default(uuid())
+  idea       Idea     @relation(fields: [ideaId], references: [id])
+  ideaId     String
+  reviewer   User     @relation(fields: [reviewerId], references: [id])
+  reviewerId String
+  originality Int
+  feasibility Int
+  impact      Int
+  createdAt   DateTime @default(now())
+}
+
+// Comments / critiques
+model IdeaComment {
+  id        String   @id @default(uuid())
+  idea      Idea     @relation(fields: [ideaId], references: [id])
+  ideaId    String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
 }
