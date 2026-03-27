@@ -3,54 +3,41 @@ import { ZodObject, ZodError } from 'zod';
 
 export const validateBody = (schema: ZodObject) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const result = schema.safeParse(req.body);
+    try {
+      const result = schema.safeParse(req.body);
 
-    if (!result.success) {
-      return res.status(400).json({
-        error: 'Invalid body',
-        details: result.error.issues.map((iss) => ({
-          path: iss.path.join('.'),
-          message: iss.message
-        }))
+      if (!result.success) {
+        return res.status(400).json({
+          error: 'Invalid body',
+          details: result.error.issues.map((iss) => ({
+            path: iss.path.join('.'),
+            message: iss.message
+          }))
+        });
+      }
+
+      // Attach the cleaned data back to req.body
+      req.body = result.data;
+      next();
+    } catch (error: any) {
+      return res.status(500).json({
+        error: 'Body validation error',
+        details: error.message
       });
     }
-
-    // Attach the cleaned data back to req.body
-    req.body = result.data;
-    next();
   };
 };
 
   
  export const validateQuery = (schema: ZodObject) => 
-    async (req: Request, res: Response, next: NextFunction) => {
-      const result = schema.safeParse(req.query); 
+    (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const result = schema.safeParse(req.query); 
 
-      // incase it fails
-      if (!result.success) {
-        return res.status(400).json({
-          error: 'Invalid query',
-          details: result.error.issues.map((issue) => ({
-            path: issue.path.join('.'),
-            message: issue.message
-          }))
-        })
-      }
-
-      // other than that
-      req.query = result.data; 
-
-      next()
-   };
-     
-  
-  export const validateParams = (schema: ZodObject) => 
-      async (req: Request, res: Response, next: NextFunction) =>{
-        const result = schema.safeParse(req.params); 
-        
+        // incase it fails
         if (!result.success) {
           return res.status(400).json({
-            error: 'Invalid parameters',
+            error: 'Invalid query',
             details: result.error.issues.map((issue) => ({
               path: issue.path.join('.'),
               message: issue.message
@@ -58,8 +45,42 @@ export const validateBody = (schema: ZodObject) => {
           })
         }
 
-        // if no error 
-        req.params = result.data; 
+        // Store validated query data in a custom property (req.query is read-only)
+        (req as any).validatedQuery = result.data; 
 
-        next();
+        next()
+      } catch (error: any) {
+        return res.status(500).json({
+          error: 'Query validation error',
+          details: error.message
+        });
+      }
+   };
+     
+  
+  export const validateParams = (schema: ZodObject) => 
+      (req: Request, res: Response, next: NextFunction) => {
+        try {
+          const result = schema.safeParse(req.params); 
+          
+          if (!result.success) {
+            return res.status(400).json({
+              error: 'Invalid parameters',
+              details: result.error.issues.map((issue) => ({
+                path: issue.path.join('.'),
+                message: issue.message
+              }))
+            })
+          }
+
+          // Assign to req.params (it's writable)
+          req.params = result.data; 
+
+          next();
+        } catch (error: any) {
+          return res.status(500).json({
+            error: 'Parameter validation error',
+            details: error.message
+          });
+        }
   };

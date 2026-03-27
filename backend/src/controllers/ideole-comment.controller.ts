@@ -42,8 +42,7 @@ export const CommentController = {
   async getComments(req: Request, res: Response) {
     try {
       const { ideaId } = req.params;
-      const page = parseInt((req.query.page as string) || '1');
-      const limit = parseInt((req.query.limit as string) || '20');
+      const { page, limit } = (req as any).validatedQuery || { page: 1, limit: 20 };
 
       const result = await CommentService.getIdeaComments(ideaId, page, limit);
 

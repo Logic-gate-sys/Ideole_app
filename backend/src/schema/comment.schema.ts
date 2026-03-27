@@ -2,34 +2,26 @@ import { z } from 'zod';
 
 // Create comment schema
 export const createCommentSchema = z.object({
-  body: z.object({
-    content: z.string()
-      .min(1, 'Comment cannot be empty')
-      .max(1000, 'Comment must not exceed 1000 characters'),
-  }),
+  content: z.string()
+    .min(1, 'Comment cannot be empty')
+    .max(1000, 'Comment must not exceed 1000 characters'),
 });
 
 // Comment ID parameter schema
 export const commentIdParamSchema = z.object({
-  params: z.object({
-    ideaId: z.string().uuid('Invalid idea ID format'),
-    commentId: z.string().uuid('Invalid comment ID format'),
-  }),
+  ideaId: z.string().uuid('Invalid idea ID format'),
+  commentId: z.string().uuid('Invalid comment ID format'),
 });
 
 // Get comments for idea parameter schema
 export const getCommentsParamSchema = z.object({
-  params: z.object({
-    ideaId: z.string().uuid('Invalid idea ID format'),
-  }),
+  ideaId: z.string().uuid('Invalid idea ID format'),
 });
 
 // Query schema for pagination
 export const commentPaginationQuerySchema = z.object({
-  query: z.object({
-    page: z.string().regex(/^\d+$/, 'Page must be a number').transform(Number).default('1'),
-    limit: z.string().regex(/^\d+$/, 'Limit must be a number').transform(Number).default('20'),
-  }),
+  page: z.coerce.number().int().min(1).default(1).catch(1),
+  limit: z.coerce.number().int().min(1).default(20).catch(20),
 });
 
 // Export types

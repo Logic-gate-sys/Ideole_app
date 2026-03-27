@@ -5,7 +5,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import helmet  from 'helmet';
 import { isTest } from '../env.ts';
-import { ideaRouter } from './routes/index.ts';
+import apiRouter from './routes/index.ts';
 
 
 
@@ -32,8 +32,8 @@ app.use('/health', (req, res) => {
 
 
 // -------------------- ROUTES ----------------------------
-// Ideole router
-app.use('/api/ideole', ideaRouter);
+// Ideole API routes
+app.use('/api/ideole', apiRouter);
 
 
 

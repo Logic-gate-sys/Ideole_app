@@ -43,25 +43,19 @@ export const updateIdeaSchema = z.object({
 
 // Toggle idea visibility schema
 export const togglePublicSchema = z.object({
-  body: z.object({
-    isPublic: z.boolean(),
-  }),
+  isPublic: z.boolean(),
 });
 
 // Idea ID parameter schema
 export const ideaIdParamSchema = z.object({
-  params: z.object({
-    ideaId: z.string().uuid('Invalid idea ID format'),
-  }),
+  ideaId: z.string().uuid('Invalid idea ID format'),
 });
 
 // Query schema for getting ideas
 export const getIdeasQuerySchema = z.object({
-  query: z.object({
-    page: z.string().regex(/^\d+$/, 'Page must be a number').transform(Number).default('1'),
-    limit: z.string().regex(/^\d+$/, 'Limit must be a number').transform(Number).default('10'),
-    visibility: z.enum(['PRIVATE', 'COMMUNITY', 'PUBLIC']).optional(),
-  }),
+  page: z.coerce.number().int().min(1).default(1).catch(1),
+  limit: z.coerce.number().int().min(1).default(10).catch(10),
+  visibility: z.enum(['PRIVATE', 'COMMUNITY', 'PUBLIC']).optional(),
 });
 
 // Export types

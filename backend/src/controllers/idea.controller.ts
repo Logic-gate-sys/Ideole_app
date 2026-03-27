@@ -40,8 +40,7 @@ export const IdeaController = {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
       }
 
-      const page = parseInt((req.query.page as string) || '1');
-      const limit = parseInt((req.query.limit as string) || '10');
+      const { page, limit } = (req as any).validatedQuery || { page: 1, limit: 10 };
 
       const result = await IdeaService.getVisibleIdeasForUser(userId, page, limit);
 

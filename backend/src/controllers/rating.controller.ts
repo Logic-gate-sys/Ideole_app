@@ -28,7 +28,7 @@ export const RatingController = {
       if (error.message === 'Idea not found') {
         return res.status(404).json({ success: false, error: 'Idea not found' });
       }
-      if (error.message.includes('permission') || error.message.includes('already rated')) {
+      if (error.message.includes('Cannot rate') || error.message.includes('do not have permission') || error.message.includes('already rated')) {
         return res.status(403).json({ success: false, error: error.message });
       }
       return res.status(500).json({

@@ -61,7 +61,7 @@ export const InviteController = {
       if (error.message === 'Invite not found') {
         return res.status(404).json({ success: false, error: 'Invite not found' });
       }
-      if (error.message.includes('permission')) {
+      if (error.message.includes('Cannot accept') || error.message.includes('permission')) {
         return res.status(403).json({ success: false, error: error.message });
       }
       return res.status(500).json({
