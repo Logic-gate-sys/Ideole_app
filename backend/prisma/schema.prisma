@@ -31,7 +31,7 @@ model Idea {
   category    String
   visibility  Visibility    @default(PRIVATE)
   isPublic    Boolean       @default(false)
-  creator     User          @relation(fields: [creatorId], references: [id])
+  creator     User          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   creatorId   String
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -50,9 +50,9 @@ enum Visibility {
 // Invitations for review
 model IdeaInvite {
   id         String   @id @default(uuid())
-  idea       Idea     @relation(fields: [ideaId], references: [id])
+  idea       Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
   ideaId     String
-  reviewer   User     @relation(fields: [reviewerId], references: [id])
+  reviewer   User     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
   reviewerId String
   status     InviteStatus @default(PENDING)
   createdAt  DateTime @default(now())
@@ -66,9 +66,9 @@ enum InviteStatus {
 // Ratings
 model IdeaRating {
   id         String   @id @default(uuid())
-  idea       Idea     @relation(fields: [ideaId], references: [id])
+  idea       Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
   ideaId     String
-  reviewer   User     @relation(fields: [reviewerId], references: [id])
+  reviewer   User     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
   reviewerId String
   originality Int
   feasibility Int
@@ -79,9 +79,9 @@ model IdeaRating {
 // Comments / critiques
 model IdeaComment {
   id        String   @id @default(uuid())
-  idea      Idea     @relation(fields: [ideaId], references: [id])
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
   ideaId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   content   String
   createdAt DateTime @default(now())

@@ -1,1 +1,1 @@
-export { default as merchantRouter } from './merchant.route.ts'
+export { default as ideaRouter } from './ideole.route.ts'

@@ -5,7 +5,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import helmet  from 'helmet';
 import { isTest } from '../env.ts';
-import { merchantRouter} from './routes/index.ts';
+import { ideaRouter } from './routes/index.ts';
 
 
 
@@ -32,9 +32,10 @@ app.use('/health', (req, res) => {
 
 
 // -------------------- ROUTES ----------------------------
-//Merchant router
-app.use('/api/merchant', merchantRouter) ; 
- 
+// Ideole router
+app.use('/api/ideole', ideaRouter);
+
+
 
 
 
