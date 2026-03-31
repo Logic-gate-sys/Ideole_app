@@ -2,13 +2,13 @@ class User {
   final String id;
   final String name;
   final String email;
-  final String token; // JWT
+  final String? token; // JWT - optional for some responses
 
   User({
     required this.id,
     required this.name,
     required this.email,
-    required this.token,
+    this.token,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -16,7 +16,7 @@ class User {
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       email: json['email'] ?? '',
-      token: json['token'] ?? '',
+      token: json['token'],
     );
   }
 
@@ -24,6 +24,6 @@ class User {
     'id': id,
     'name': name,
     'email': email,
-    'token': token,
+    if (token != null) 'token': token,
   };
 }

@@ -1,0 +1,53 @@
+@startuml Ideole_UseCase
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "User" as U
+actor "Startup Founder" as Founder
+actor "Reviewer" as Reviewer
+actor "Community Admin" as Admin
+actor "Org Owner" as Org
+
+' Actor Generalization
+Founder --|> U
+Reviewer --|> U
+Admin --|> Reviewer
+
+rectangle "Ideole System" {
+  ' Base Use Cases
+  (Login / Authenticate) as UC_Auth
+  (Post Idea) as UC_Post
+  (Rate & Review Idea) as UC_Rate
+  (Manage Community) as UC_Manage
+  (Manage Organisation) as UC_Org
+  
+  ' Relationships: Include
+  UC_Post ..> UC_Auth : <<include>>
+  UC_Rate ..> UC_Auth : <<include>>
+  UC_Manage ..> UC_Auth : <<include>>
+
+  ' Relationships: Extend
+  (Add Collaborators) as UC_Collab
+  (Apply for Funding) as UC_Fund
+  (Request Join Community) as UC_Join
+  
+  UC_Collab ..> UC_Post : <<extend>>
+  UC_Fund ..> UC_Post : <<extend>>
+  UC_Join ..> UC_Rate : <<extend>> (if private)
+
+  ' Specific Logic
+  (Set Visibility) as UC_Vis
+  UC_Vis --|> UC_Post : <<generalization>>
+  
+  (Dissolve Community) as UC_Dissolve
+  UC_Dissolve ..> UC_Manage : <<extend>> (after 3 months)
+}
+
+' Actor to Use Case mapping
+Founder --> UC_Post
+Reviewer --> UC_Rate
+Admin --> UC_Manage
+Org --> UC_Org
+
+@enduml

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { ZodObject, ZodError } from 'zod';
 
 export const validateBody = (schema: ZodObject) => {
@@ -8,6 +8,7 @@ export const validateBody = (schema: ZodObject) => {
 
       if (!result.success) {
         return res.status(400).json({
+          success: false,
           error: 'Invalid body',
           details: result.error.issues.map((iss) => ({
             path: iss.path.join('.'),
@@ -21,6 +22,7 @@ export const validateBody = (schema: ZodObject) => {
       next();
     } catch (error: any) {
       return res.status(500).json({
+        success: false,
         error: 'Body validation error',
         details: error.message
       });
@@ -37,6 +39,7 @@ export const validateBody = (schema: ZodObject) => {
         // incase it fails
         if (!result.success) {
           return res.status(400).json({
+            success: false,
             error: 'Invalid query',
             details: result.error.issues.map((issue) => ({
               path: issue.path.join('.'),
@@ -51,6 +54,7 @@ export const validateBody = (schema: ZodObject) => {
         next()
       } catch (error: any) {
         return res.status(500).json({
+          success: false,
           error: 'Query validation error',
           details: error.message
         });
@@ -65,6 +69,7 @@ export const validateBody = (schema: ZodObject) => {
           
           if (!result.success) {
             return res.status(400).json({
+              success: false,
               error: 'Invalid parameters',
               details: result.error.issues.map((issue) => ({
                 path: issue.path.join('.'),

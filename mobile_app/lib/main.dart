@@ -1,9 +1,22 @@
 import 'package:flutter/material.dart';
-import 'features/auth/screens/login_screen.dart';
-import 'features/auth/screens/signup_screen.dart';
-import 'features/home/screens/home_screen.dart'; // placeholder
+import 'package:provider/provider.dart';
+import 'core/services/token_storage.dart';
+import 'features/auth/services/auth_service.dart';
+import 'features/ideas/controllers/idea_controller.dart';
+import 'features/ratings/controllers/rating_controller.dart';
+import 'features/invites/controllers/invite_controller.dart';
+import 'features/comments/controllers/comment_controller.dart';
+import 'core/theme/app_theme.dart';
+import 'screens/app_shell.dart';
 
-void main() {
+void main() async {
+  // Initialize app
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize token storage
+  final tokenStorage = TokenStorage();
+  await tokenStorage.init();
+  
   runApp(const MyApp());
 }
 
@@ -12,18 +25,32 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Ideole',
-      debugShowCheckedModeBanner: true,
-      theme: ThemeData(
-        primaryColor: Colors.blue, // fallback
+    return MultiProvider(
+      providers: [
+        // Services
+        Provider<AuthService>(create: (_) => AuthService()),
+
+        // Controllers
+        ChangeNotifierProvider<IdeaController>(
+          create: (_) => IdeaController(),
+        ),
+        ChangeNotifierProvider<RatingController>(
+          create: (_) => RatingController(),
+        ),
+        ChangeNotifierProvider<InviteController>(
+          create: (_) => InviteController(),
+        ),
+        ChangeNotifierProvider<CommentController>(
+          create: (_) => CommentController(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Ideole',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        themeMode: ThemeMode.system,
+        home: const AppShell(),
       ),
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/signup': (context) => const SignupScreen(),
-        '/home': (context) => const HomeScreen(), // create a simple placeholder
-      },
     );
   }
 }

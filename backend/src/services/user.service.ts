@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from "../lib/prisma.ts";
 import { Visibility } from '../types/index.ts';
 
 export interface CreateUserInput {

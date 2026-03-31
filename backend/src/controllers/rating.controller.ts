@@ -68,7 +68,7 @@ export const RatingController = {
 
       const ratings = await RatingService.getIdeaRatings(ideaId);
 
-      return res.status(200).json({ success: true, data: ratings });
+      return res.status(200).json({ success: true, data: ratings || [] });
     } catch (error: any) {
       if (error.message === 'Idea not found') {
         return res.status(404).json({ success: false, error: 'Idea not found' });

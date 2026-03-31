@@ -46,7 +46,7 @@ export const CommentController = {
 
       const result = await CommentService.getIdeaComments(ideaId, page, limit);
 
-      return res.status(200).json({ success: true, data: result });
+      return res.status(200).json({ success: true, data: result.comments, pagination: result.pagination });
     } catch (error: any) {
       if (error.message === 'Idea not found') {
         return res.status(404).json({ success: false, error: 'Idea not found' });

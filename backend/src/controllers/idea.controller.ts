@@ -40,11 +40,15 @@ export const IdeaController = {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
       }
 
-      const { page, limit } = (req as any).validatedQuery || { page: 1, limit: 10 };
+      const { page, limit, visibility } = (req as any).validatedQuery || { page: 1, limit: 10, visibility: undefined };
 
-      const result = await IdeaService.getVisibleIdeasForUser(userId, page, limit);
+      const result = await IdeaService.getVisibleIdeasForUser(userId, page, limit, visibility);
 
-      return res.status(200).json({ success: true, data: result });
+      return res.status(200).json({ 
+        success: true, 
+        data: result.ideas,
+        pagination: result.pagination
+      });
     } catch (error: any) {
       return res.status(500).json({
         success: false,
@@ -146,7 +150,11 @@ export const IdeaController = {
 
       const result = await IdeaService.getUserIdeas(userId, page, limit);
 
-      return res.status(200).json({ success: true, data: result });
+      return res.status(200).json({ 
+        success: true, 
+        data: result.ideas,
+        pagination: result.pagination
+      });
     } catch (error: any) {
       return res.status(500).json({
         success: false,

@@ -33,7 +33,7 @@ app.use('/health', (req, res) => {
 
 // -------------------- ROUTES ----------------------------
 // Ideole API routes
-app.use('/api/ideole', apiRouter);
+app.use('/api', apiRouter);
 
 
 

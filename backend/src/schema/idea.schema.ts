@@ -55,7 +55,13 @@ export const ideaIdParamSchema = z.object({
 export const getIdeasQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1).catch(1),
   limit: z.coerce.number().int().min(1).default(10).catch(10),
-  visibility: z.enum(['PRIVATE', 'COMMUNITY', 'PUBLIC']).optional(),
+  visibility: z.string()
+    .transform(v => v.split(',').map((item: string) => item.trim()))
+    .refine(
+      items => items.every(item => ['PRIVATE', 'COMMUNITY', 'PUBLIC'].includes(item)),
+      'Each visibility value must be PRIVATE, COMMUNITY, or PUBLIC'
+    )
+    .optional(),
 });
 
 // Export types

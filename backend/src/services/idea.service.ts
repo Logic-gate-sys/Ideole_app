@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from "../lib/prisma.ts";
 import { Visibility } from '../types/index.ts';
 
 export interface CreateIdeaInput {
@@ -64,23 +64,40 @@ export const IdeaService = {
 
   /**
    * Get all ideas visible to a user (public + their own + invited to)
+   * Optionally filtered by visibility values
    */
-  async getVisibleIdeasForUser(userId: string, page: number = 1, limit: number = 10) {
+  async getVisibleIdeasForUser(userId: string, page: number = 1, limit: number = 10, visibilityFilter?: string[]) {
     const skip = (page - 1) * limit;
 
-    const [ideas, total] = await Promise.all([
-      prisma.idea.findMany({
-        where: {
-          OR: [
-            { visibility: 'PUBLIC' },
-            { creatorId: userId },
+    const baseWhere: any = {
+      OR: [
+        { visibility: 'PUBLIC' },
+        { creatorId: userId },
+        {
+          invites: {
+            some: { reviewerId: userId },
+          },
+        },
+      ],
+    };
+
+    // Add visibility filter if provided
+    const where = visibilityFilter && visibilityFilter.length > 0
+      ? {
+          AND: [
+            baseWhere,
             {
-              invites: {
-                some: { reviewerId: userId },
+              visibility: {
+                in: visibilityFilter as Visibility[],
               },
             },
           ],
-        },
+        }
+      : baseWhere;
+
+    const [ideas, total] = await Promise.all([
+      prisma.idea.findMany({
+        where,
         include: {
           creator: { select: { id: true, name: true } },
           _count: {
@@ -91,19 +108,7 @@ export const IdeaService = {
         skip,
         take: limit,
       }),
-      prisma.idea.count({
-        where: {
-          OR: [
-            { visibility: 'PUBLIC' },
-            { creatorId: userId },
-            {
-              invites: {
-                some: { reviewerId: userId },
-              },
-            },
-          ],
-        },
-      }),
+      prisma.idea.count({ where }),
     ]);
 
     return {
