@@ -1,91 +1,59 @@
-import type { Request, Response, NextFunction } from 'express';
-import { ZodObject, ZodError } from 'zod';
+import type{ Request, Response, NextFunction } from "express";
+import { ZodType } from "zod";
 
-export const validateBody = (schema: ZodObject) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const result = schema.safeParse(req.body);
+export const Validator = {
+    validateBody(body: ZodType){
+       return  async (req:Request, res:Response, next:NextFunction) =>{
+            const result = body.safeParse(req.body);
+            if(!result.success){
+                return res.status(400).json({
+                    message:'error',
+                    details: result.error.issues.map((iss)=>({
+                        path:iss.path.join("."),
+                        message:iss.message
+                    }))
+                })
+            }
+            // other than that
+            req.body = result.data ; // attach valid body
+        
+            next(); 
+        }
+    },
 
-      if (!result.success) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid body',
-          details: result.error.issues.map((iss) => ({
-            path: iss.path.join('.'),
-            message: iss.message
-          }))
-        });
-      }
+    validateParam(params: ZodType){
+       return  async (req:Request, res:Response, next:NextFunction) =>{
+            const result = params.safeParse(req.body);
+            if(!result.success){
+                return res.status(400).json({
+                    message:'error',
+                    details: result.error.issues.map((iss)=>({
+                        path:iss.path.join("."),
+                        message:iss.message
+                    }))
+                })
+            }
+            //
+        
+            next(); 
+        }
+    },
 
-      // Attach the cleaned data back to req.body
-      req.body = result.data;
-      next();
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        error: 'Body validation error',
-        details: error.message
-      });
+    validateQuey(query: ZodType){
+       return  async (req:Request, res:Response, next:NextFunction) =>{
+            const result = query.safeParse(req.body);
+            if(!result.success){
+                return res.status(400).json({
+                    message:'error',
+                    details: result.error.issues.map((iss)=>({
+                        path:iss.path.join("."),
+                        message:iss.message
+                    }))
+                })
+            }
+            // other than that
+        
+            next(); 
+        }
     }
-  };
-};
-
-  
- export const validateQuery = (schema: ZodObject) => 
-    (req: Request, res: Response, next: NextFunction) => {
-      try {
-        const result = schema.safeParse(req.query); 
-
-        // incase it fails
-        if (!result.success) {
-          return res.status(400).json({
-            success: false,
-            error: 'Invalid query',
-            details: result.error.issues.map((issue) => ({
-              path: issue.path.join('.'),
-              message: issue.message
-            }))
-          })
-        }
-
-        // Store validated query data in a custom property (req.query is read-only)
-        (req as any).validatedQuery = result.data; 
-
-        next()
-      } catch (error: any) {
-        return res.status(500).json({
-          success: false,
-          error: 'Query validation error',
-          details: error.message
-        });
-      }
-   };
-     
-  
-  export const validateParams = (schema: ZodObject) => 
-      (req: Request, res: Response, next: NextFunction) => {
-        try {
-          const result = schema.safeParse(req.params); 
-          
-          if (!result.success) {
-            return res.status(400).json({
-              success: false,
-              error: 'Invalid parameters',
-              details: result.error.issues.map((issue) => ({
-                path: issue.path.join('.'),
-                message: issue.message
-              }))
-            })
-          }
-
-          // Assign to req.params (it's writable)
-          req.params = result.data; 
-
-          next();
-        } catch (error: any) {
-          return res.status(500).json({
-            error: 'Parameter validation error',
-            details: error.message
-          });
-        }
-  };
+}

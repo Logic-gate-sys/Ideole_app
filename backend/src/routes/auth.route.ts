@@ -1,17 +1,16 @@
-import { Router } from 'express';
-import { AuthController } from '../controllers/auth.controller.ts';
-import { validateBody } from '../middlewares/validate.middleware.ts';
-import { signupSchema, loginSchema } from '../schema/ideole-auth.schema.ts';
+import type { Router } from 'express';
+import { AuthControllers } from 'controllers/auth.controller.ts';
+import { registerSchema, loginSchema, refreshTokenSchema } from 'schema/auth.schema.ts';
+import { authenticate, authorise } from '../middlewares/auth.middleware.ts';
+import { Validator } from 'middlewares/validate.middleware.ts';
 
-const authRouter = Router();
+export function setupAuthRoutes(router: Router) {
+  // Public routes
+  router.post('/auth/register',Validator.validateBody(registerSchema),  AuthControllers.register);
+  router.post('/auth/login',Validator.validateBody(loginSchema), AuthControllers.login);
+  router.post('/auth/refresh',Validator.validateBody(refreshTokenSchema), AuthControllers.refresh);
+  router.post('/auth/logout', AuthControllers.logout);
 
-// Public auth routes (no auth middleware required)
-authRouter.post('/auth/signup', validateBody(signupSchema), (req, res) => {
-  return AuthController.signup(req, res);
-});
-
-authRouter.post('/auth/login', validateBody(loginSchema), (req, res) => {
-  return AuthController.login(req, res);
-});
-
-export default authRouter;
+  // Protected routes - require authentication only
+  router.get('/auth/me',authenticate, authorise('user:read:own'), AuthControllers.getMe);
+}

@@ -1,23 +1,13 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth.middleware.ts';
-import authRouter from './auth.route.ts';
-import ideaRouter from './idea.route.ts';
-import ratingRouter from './rating.route.ts';
-import inviteRouter from './invite.route.ts';
-import commentRouter from './comment.route.ts';
+import { authenticate } from '../middlewares/auth.middleware.ts';
+import { setupAuthRoutes } from './auth.route.ts';
 
-const apiRouter = Router();
+const router = Router();
 
-// Public auth routes (no auth middleware)
-apiRouter.use(authRouter);
+// Apply authentication middleware globally (optional)
+router.use(authenticate);
 
-// Apply auth middleware to all other routes
-apiRouter.use(authMiddleware);
+// Setup all routes
+setupAuthRoutes(router);
 
-// Mount feature routers
-apiRouter.use(ideaRouter);
-apiRouter.use(ratingRouter);
-apiRouter.use(inviteRouter);
-apiRouter.use(commentRouter);
-
-export default apiRouter;
+export default router;

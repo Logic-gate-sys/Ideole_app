@@ -1,6 +1,5 @@
 import express from 'express';
 import { createServer } from 'http'; 
-import { initSocket } from './lib/index.ts';
 import cors from 'cors';
 import morgan from 'morgan';
 import helmet  from 'helmet';
@@ -18,7 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // allows express to to decipher all url endcodings to unders and decode params
 
 const httpServer = createServer(app); 
-initSocket(httpServer); 
+// TODO: Setup WebSocket later 
 
 // api health-check endpoint 
 app.use('/health', (req, res) => {

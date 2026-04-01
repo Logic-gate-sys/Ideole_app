@@ -1,82 +1,201 @@
 // schema.prisma
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output = "./generated"
+  
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-// Users
-model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+// ============================================================
+// ENUMS
+// ============================================================
 
-  ideas        Idea[]        // ideas created by user
-  ratings      IdeaRating[]  // ratings user gave
-  comments     IdeaComment[] // comments user wrote
-  invites      IdeaInvite[]  // invited to review ideas
+enum Role {
+  USER
+  ADMIN
 }
 
-// Ideas
-model Idea {
-  id          String        @id @default(uuid())
-  title       String
-  problemText String
-  solutionText String
-  category    String
-  visibility  Visibility    @default(PRIVATE)
-  isPublic    Boolean       @default(false)
-  creator     User          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  creatorId   String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  ratings     IdeaRating[]
-  comments    IdeaComment[]
-  invites     IdeaInvite[]
+enum Stage {
+  INCEPTION
+  COLLABORATIVE
+  IMPLEMENTATION
 }
 
 enum Visibility {
-  PRIVATE
-  COMMUNITY
   PUBLIC
+  PROTECTED
+  PRIVATE
 }
 
-// Invitations for review
-model IdeaInvite {
-  id         String   @id @default(uuid())
-  idea       Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
-  ideaId     String
-  reviewer   User     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
-  reviewerId String
-  status     InviteStatus @default(PENDING)
-  createdAt  DateTime @default(now())
-}
-
-enum InviteStatus {
+enum Status {
+  ACTIVE
+  DORMANT
   PENDING
-  ACCEPTED
+  BANNED
 }
 
-// Ratings
-model IdeaRating {
-  id         String   @id @default(uuid())
-  idea       Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
-  ideaId     String
-  reviewer   User     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
-  reviewerId String
-  originality Int
-  feasibility Int
-  impact      Int
+enum ContextType {
+  IDEA
+  COMMUNITY
+  DIRECT
+}
+
+// ============================================================
+// USERS
+// ============================================================
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  firstName    String?
+  lastName     String?
+  passwordHash String
+  profileUrl   String   @default("")
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastActive   DateTime @default(now())
+  status       Status   @default(ACTIVE)
+
+  ideas            Idea[]
+  ratings          IdeaRating[]
+  comments         IdeaComment[]
+  invites          IdeaInvite[]
+  messages         Message[]
+  memberships      Membership[]
+  ownedOrgs        Organisation[]
+  ownedCommunities Community[]
+}
+
+// ============================================================
+// ORGANISATIONS & COMMUNITIES
+// ============================================================
+
+model Organisation {
+  id             String   @id @default(uuid())
+  name           String
+  tier           String   @default("starter")
+  maxCommunities Int      @default(5)
+  owner          User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  communities Community[]
+  memberships Membership[]
+  ideas       Idea[]
+
+  @@index([ownerId])
+}
+
+model Community {
+  id             String       @id @default(uuid())
+  name           String
+  description    String       @default("")
+  visibility     Visibility   @default(PRIVATE)
+  status         Status       @default(ACTIVE)
+  dormantSince   DateTime?
+  admin          User         @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId        String
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  ideas       Idea[]
+  memberships Membership[]
+
+  @@index([adminId])
+  @@index([organisationId])
+}
+
+model Membership {
+  id             String        @id @default(uuid())
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  organisation   Organisation? @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String?
+  community      Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  communityId    String
+  role           String        @default("member")
+  status         Status        @default(PENDING)
+  joinedAt       DateTime      @default(now())
+
+  @@unique([userId, communityId])
+  @@index([userId])
+  @@index([communityId])
+  @@index([organisationId])
+}
+
+// ============================================================
+// IDEAS & EVALUATION CRITERIA
+// ============================================================
+
+model Idea {
+  id             String        @id @default(uuid())
+  title          String
+  description    String
+  visibility     Visibility    @default(PRIVATE)
+  stage          Stage         @default(INCEPTION)
+  owner          User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId        String
+  community      Community?    @relation(fields: [communityId], references: [id], onDelete: SetNull)
+  communityId    String?
+  organisation   Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+  organisationId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  criteria      EvaluationCriteria[]
+  ratings       IdeaRating[]
+  comments      IdeaComment[]
+  invites       IdeaInvite[]
+  conversations Conversation[]
+
+  @@index([ownerId])
+  @@index([communityId])
+  @@index([organisationId])
+}
+
+model EvaluationCriteria {
+  id          String   @id @default(uuid())
+  idea        Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId      String
+  name        String
+  description String   @default("")
+  order       Int
   createdAt   DateTime @default(now())
+
+  @@index([ideaId])
 }
 
-// Comments / critiques
+// ============================================================
+// RATINGS (WITH CUSTOM CRITERIA)
+// ============================================================
+
+model IdeaRating {
+  id        String   @id @default(uuid())
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId    String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String
+  scores    Json // { "criteriaId1": 8, "criteriaId2": 9, ... }
+  isLatest  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ideaId])
+  @@index([authorId])
+}
+
+// ============================================================
+// COMMENTS & DISCUSSIONS
+// ============================================================
+
 model IdeaComment {
   id        String   @id @default(uuid())
   idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
@@ -85,4 +204,50 @@ model IdeaComment {
   userId    String
   content   String
   createdAt DateTime @default(now())
+
+  @@index([ideaId])
+  @@index([userId])
+}
+
+model Conversation {
+  id          String      @id @default(uuid())
+  contextId   String
+  contextType ContextType
+  createdAt   DateTime    @default(now())
+
+  messages Message[]
+  idea     Idea?     @relation(fields: [ideaId], references: [id])
+  ideaId   String?
+
+  @@index([contextId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId       String
+  content        String
+  sentAt         DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+// ============================================================
+// INVITATIONS
+// ============================================================
+
+model IdeaInvite {
+  id         String   @id @default(uuid())
+  idea       Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  ideaId     String
+  reviewer   User     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewerId String
+  status     Status   @default(PENDING)
+  createdAt  DateTime @default(now())
+
+  @@index([ideaId])
+  @@index([reviewerId])
 }

@@ -1,33 +1,27 @@
-import { execSync } from 'node:child_process';
-import { prisma } from '../../src/lib/prisma.ts';
-
+import {prisma} from '../../src/lib/prisma.ts'
 
 export async function setup() {
-  console.log('--- Preparing Test Environment ---');
-  
   try {
-    // sync db
-    console.log('Syncing database schema...');
-    execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
-    execSync('npx prisma generate')
-
+    // Test database connection
     await prisma.$connect();
-    console.log('--- Test Environment Ready ---');
+    console.log('✓ Database connected');
+
+    // Reset database - clear all data
+    await prisma.$executeRawUnsafe(`TRUNCATE "User" CASCADE`);
+    console.log('✓ Database reset');
   } catch (error) {
-    console.error('Global setup failed:', error);
+    console.error('✗ Global setup failed:', error);
     process.exit(1);
   }
 }
 
-
 export async function teardown() {
   try {
-    execSync('npx prisma db push --force-reset', { stdio: 'inherit' }); 
+    // Clean up before test suite ends
+    await prisma.$executeRawUnsafe(`TRUNCATE "User" CASCADE`);
     await prisma.$disconnect();
-    console.log('--- Teardown Complete ---');
-    process.exit(0); 
+    console.log('✓ Database cleaned and disconnected');
   } catch (error) {
-      console.error('Global teardown encountered an error:', error);
-      process.exit(1); 
+    console.error('✗ Global teardown failed:', error);
   }
 }

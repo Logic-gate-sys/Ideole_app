@@ -1,6 +1,7 @@
-import { prisma } from "../../src/lib/prisma.ts";
-
-// Note: Database cleanup is handled by beforeEach/afterEach in individual test files
-// to ensure proper isolation and avoid race conditions with the global setup
-//
-// If you need global cleanup between test files, use globalSetup.ts instead
+import { beforeEach } from 'vitest';
+import {prisma} from '../../src/lib/prisma.ts'
+// Run before each test file
+beforeEach(async () => {
+  // Clear all tables before each test
+  await prisma.$executeRawUnsafe(`TRUNCATE "User" CASCADE`);
+});
