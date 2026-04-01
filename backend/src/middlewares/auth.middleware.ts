@@ -1,8 +1,7 @@
-import type { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../lib/index.ts';
-import { prisma } from '../lib/prisma.ts';
-import { authorize, buildAuthContext } from '../lib/index.ts';
-
+import type { Request, Response, NextFunction } from "express";
+import { verifyToken } from "../lib/index.ts";
+import { prisma } from "../lib/prisma.ts";
+import { authorize, buildAuthContext } from "../lib/index.ts";
 
 declare global {
   namespace Express {
@@ -12,24 +11,24 @@ declare global {
   }
 }
 
-
 export async function authenticate(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next();
-  }
-
   try {
-    const token = authHeader.slice(7);
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Access Denied: No token provided" });
+    }
     const payload = await verifyToken(token);
 
-    if (!payload || payload.type !== 'access') {
-      return res.status(401).json({ error: 'Invalid token' });
+    if (!payload || payload.type !== "access") {
+      return res.status(401).json({ error: "Invalid token" });
     }
 
     const user = await prisma.user.findUnique({
@@ -37,60 +36,36 @@ export async function authenticate(
     });
 
     if (!user) {
-      return res.status(401).json({ error: 'User not found' });
+      return res.status(401).json({ error: "User not found" });
     }
 
-    req.user = user;
+    req.user = { id: user.id, email: user.email, role: user.role };
   } catch {
-    return res.status(401).json({ error: 'Authentication failed' });
+    return res.status(401).json({ error: "Authentication failed" });
   }
-
+  
+  // next middleware 
   next();
 }
 
 
-/**
- * Authorise: Check if authenticated user has permission
- * Uses full RBAC authorization with contextual checks
- * 
- * @param permission - Permission to check (e.g., 'idea:create')
- * @param getContext - Optional async function to build rich authorization context
- * 
- * @example
- * router.get('/ideas/:id', authorise('idea:read:own', async (req) => ({
- *   isOwner: idea.ownerId === req.user?.id,
- *   resourceVisibility: idea.visibility
- * })), handler)
- */
-export function authorise(
-  permission: string,
-  getContext?: (req: Request) => Promise<Record<string, any>>,
-) {
+// authorisation
+export function authorise(permission: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
+    // if you make it this far , user exists
     const user = req.user;
-
-    if (!user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
     try {
-      // Build base context from user data
-      const baseContext = buildAuthContext(user);
-
-      // Merge with optional extra context from route handler
-      const extraContext = getContext ? await getContext(req) : {};
-      const fullContext = { ...baseContext, ...extraContext };
-
-      // Perform full authorization check
-      const result = authorize(user, permission, fullContext);
+      // base context from user data
+      const userContext = buildAuthContext(user);
+      const result = authorize(user, permission, userContext);
 
       if (result) {
-        return res.status(403).json({ error: 'unauthorised', ...result });
+        return res.status(403).json({ error: "Unauthorised", ...result });
       }
 
       next();
     } catch (error) {
-      return res.status(500).json({ error: 'Authorization check failed' });
+      return res.status(500).json({ error: "Authorization check failed" });
     }
   };
 }

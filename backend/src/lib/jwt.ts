@@ -1,19 +1,20 @@
-import {jwtVerify,  SignJWT} from 'jose';
-import { jwtVerify } from 'jose';
-import type { User } from '../../prisma/generated/client.ts';
-import { sign } from 'node:crypto';
+import {JWTPayload, jwtVerify,  SignJWT} from 'jose';
+import {env} from '../../env.ts';
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
 
-export type JWTPayload= {
+
+
+
+const secret = new TextEncoder().encode(env.JWT_SECRET);
+export interface CustomJWTPayload extends JWTPayload{
   userId: string;
   email: string;
   role: string;
   type: 'access' | 'refresh';
 };
 
-export async function generateAccessToken(user: User): Promise<string> {
-  const token = await SignJWT({
+export async function generateAccessToken(user: CustomJWTPayload): Promise<string> {
+  const token = await new SignJWT({
     userId: user.id,
     email: user.email,
     role: user.role,
@@ -27,8 +28,8 @@ export async function generateAccessToken(user: User): Promise<string> {
 }
 
 
-export async function generateRefreshToken(user: User): Promise<string> {
-  const token = await new jose.SignJWT({
+export async function generateRefreshToken(user: CustomJWTPayload): Promise<string> {
+  const token = await new SignJWT({
     userId: user.id,
     email: user.email,
     role: user.role,
@@ -42,10 +43,10 @@ export async function generateRefreshToken(user: User): Promise<string> {
 }
 
 
-export async function verifyToken(token: string): Promise<JWTPayload | null> {
+export async function verifyToken(token: string): Promise<CustomJWTPayload | null> {
   try {
-    const verified = await jose.jwtVerify(token, secret);
-    return verified.payload as JWTPayload;
+    const verified = await jwtVerify(token, secret);
+    return verified.payload as CustomJWTPayload;
   } catch {
     return null;
   }

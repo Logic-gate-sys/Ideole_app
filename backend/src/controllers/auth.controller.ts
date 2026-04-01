@@ -1,54 +1,82 @@
 import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service.ts';
-import { sendSuccess, sendLogout } from '../lib/response.ts';
-import { handleControllerError, handleAuthError } from '../lib/error.ts';
+import { generateAccessToken, generateRefreshToken } from 'lib/jwt.ts';
+import {env} from '../../env.ts'
 
 export const AuthControllers = {
-  async register(req: Request, res: Response) {
-    try {
-      const result = await AuthService.registerUser(req.body);
-      return sendSuccess(res, result, 201);
-    } catch (error) {
-      return handleControllerError(error, res);
+  async register(req: Request, res:Response){
+    try{
+      const body = req.body; 
+      const newUser = await AuthService.registerUser(body); 
+      // access and refresh token 
+      const payload = {
+        userId: newUser.id,
+        email:newUser.email,
+        role: newUser.role,
+      }
+      const acessToken = await generateAccessToken({...payload, type:'access'}); 
+      const refreshToken = await generateRefreshToken({...payload, type:'refresh'}); 
+      //send refresh token to http-only
+      res.cookie('refresh-token', refreshToken, {
+             httpOnly:true,
+             secure: env.NODE_ENV==='production'? true: false,
+             maxAge:7*24*(1000*60*60),
+             sameSite:'lax'
+      })
+
+      // return 
+      return res.status(201).json({
+        success:true, 
+        data: newUser,
+        token: acessToken
+      })
+    }catch(err){
+        return res.status(500).json({
+            message:'error',
+            details: err.message
+        })
     }
+    
+  },
+  
+  // login 
+  async login(req: Request, res:Response){
+    try{
+      const user = req.user; 
+      const newUser = await AuthService.registerUser(user); 
+      // access and refresh token 
+      const acessToken = await generateAccessToken(user); 
+      const refreshToken = await generateRefreshToken(user); 
+      //send refresh token to http-only
+      res.cookie('refresh-token', refreshToken, {
+             httpOnly:true,
+             secure: env.NODE_ENV==='production'? true: false,
+             maxAge:7*24*(1000*60*60),
+             sameSite:'lax'
+      })
+
+      // return 
+      return res.status(201).json({
+        success:true, 
+        data: newUser,
+        token: acessToken
+      })
+    }catch(err){
+        return res.status(500).json({
+            message:'error',
+            details: err.message
+        })
+    }
+    
   },
 
-  async login(req: Request, res: Response) {
-    try {
-      const result = await AuthService.loginUser(req.body);
-      return sendSuccess(res, result);
-    } catch (error) {
-      return handleAuthError(error, res);
-    }
-  },
-
-  async refresh(req: Request, res: Response) {
-    try {
-      const result = await AuthService.refreshAccessToken(req.body.refreshToken);
-      return sendSuccess(res, result);
-    } catch (error) {
-      return handleAuthError(error, res);
-    }
-  }, 
-
-async logout(req: Request, res: Response){
-  return sendLogout(res);
-},
-
-async getMe(req: Request, res: Response){
-  if (!req.user) {
-    return handleAuthError(new Error('Not authenticated'), res);
-  }
-
-  const userData = {
-    id: req.user.id,
-    username: req.user.username,
-    email: req.user.email,
-    role: req.user.role,
-    profileUrl: req.user.profileUrl,
-  };
-
-  return sendSuccess(res, userData);
 }
 
-}
+
+/*
+router.post('/auth/register',Validator.validateBody(registerSchema),  AuthControllers.register);
+  router.post('/auth/login',Validator.validateBody(loginSchema), AuthControllers.login);
+  router.post('/auth/refresh',Validator.validateBody(refreshTokenSchema), AuthControllers.refresh);
+  router.post('/auth/logout', AuthControllers.logout);
+
+*/
