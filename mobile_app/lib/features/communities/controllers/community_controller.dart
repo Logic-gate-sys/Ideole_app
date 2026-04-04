@@ -1,196 +1,159 @@
-import 'package:flutter/material.dart';
-import '../services/community_service.dart';
-import '../../../shared/models/community_model.dart';
+import 'package:flutter/foundation.dart';
+import '../../../services/community_service.dart';
+import '../../../models/community.dart';
 
+/// CommunityController - Manages community state
 class CommunityController extends ChangeNotifier {
-  final CommunityService _service = CommunityService();
+  final CommunityService _communityService = CommunityService();
 
-  // State management
-  Map<String, List<Community>> communitiesByOrg = {}; // organisationId -> communities
-  Community? selectedCommunity;
-  bool isLoading = false;
-  String? error;
+  // State
+  List<Community> _communities = [];
+  Community? _currentCommunity;
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  int _currentOffset = 0;
+  String? _errorMessage;
+  String? _selectedOrgId; // For filtering by organisation
 
-  // Create community
-  Future<Community?> createCommunity({
-    required String organisationId,
-    required String name,
-    String? description,
-    required String visibility,
+  // Getters
+  List<Community> get communities => _communities;
+  Community? get currentCommunity => _currentCommunity;
+  bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _hasMore;
+  String? get errorMessage => _errorMessage;
+  int get communityCount => _communities.length;
+
+  /// Load initial communities
+  Future<void> loadCommunities({
+    String? organizationId,
+    bool refresh = false,
   }) async {
-    isLoading = true;
-    error = null;
+    if (refresh) {
+      _currentOffset = 0;
+      _hasMore = true;
+    } else {
+      _isLoading = true;
+    }
+
+    _errorMessage = null;
+    _selectedOrgId = organizationId;
     notifyListeners();
 
     try {
-      final community = await _service.createCommunity(
-        organisationId: organisationId,
-        name: name,
-        description: description,
-        visibility: visibility,
+      final communities = await _communityService.getCommunities(
+        organizationId: organizationId,
+        limit: CommunityService.pageSize,
+        offset: 0,
       );
 
-      // Add to the map
-      if (!communitiesByOrg.containsKey(organisationId)) {
-        communitiesByOrg[organisationId] = [];
-      }
-      communitiesByOrg[organisationId]!.add(community);
+      _communities = communities;
+      _hasMore = communities.length == CommunityService.pageSize;
+      _currentOffset = communities.length;
+
+      _isLoading = false;
       notifyListeners();
-      return community;
     } catch (e) {
-      error = e.toString();
-      notifyListeners();
-      return null;
-    } finally {
-      isLoading = false;
+      _errorMessage = e.toString();
+      _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Get specific community
-  Future<Community?> getCommunity({
-    required String organisationId,
-    required String communityId,
-  }) async {
-    isLoading = true;
-    error = null;
+  /// Load more communities (pagination)
+  Future<void> loadMore() async {
+    if (!_hasMore || _isLoadingMore) return;
+
+    _isLoadingMore = true;
     notifyListeners();
 
     try {
-      final community = await _service.getCommunity(
-        organisationId: organisationId,
-        communityId: communityId,
+      final moreCommunities = await _communityService.getCommunities(
+        organizationId: _selectedOrgId,
+        limit: CommunityService.pageSize,
+        offset: _currentOffset,
       );
-      selectedCommunity = community;
+
+      if (moreCommunities.isEmpty) {
+        _hasMore = false;
+      } else {
+        _communities.addAll(moreCommunities);
+        _currentOffset += moreCommunities.length;
+        _hasMore = moreCommunities.length == CommunityService.pageSize;
+      }
+
+      _isLoadingMore = false;
       notifyListeners();
-      return community;
     } catch (e) {
-      error = e.toString();
-      notifyListeners();
-      return null;
-    } finally {
-      isLoading = false;
+      _errorMessage = e.toString();
+      _isLoadingMore = false;
       notifyListeners();
     }
   }
 
-  // List communities for an organisation
-  Future<List<Community>> listCommunities(String organisationId) async {
-    isLoading = true;
-    error = null;
+  /// Get single community details
+  Future<void> loadCommunityDetail(String communityId) async {
+    _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
-      final communities = await _service.listCommunities(organisationId);
-      communitiesByOrg[organisationId] = communities;
+      final community = await _communityService.getCommunity(communityId);
+      _currentCommunity = community;
+      _isLoading = false;
       notifyListeners();
-      return communities;
     } catch (e) {
-      error = e.toString();
-      notifyListeners();
-      return [];
-    } finally {
-      isLoading = false;
+      _errorMessage = e.toString();
+      _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Update community
-  Future<Community?> updateCommunity({
-    required String organisationId,
-    required String communityId,
-    required String name,
-    String? description,
-    required String visibility,
-  }) async {
-    isLoading = true;
-    error = null;
-    notifyListeners();
-
+  /// Request to join community
+  Future<bool> requestToJoin(String communityId) async {
     try {
-      final updatedCommunity = await _service.updateCommunity(
-        organisationId: organisationId,
-        communityId: communityId,
-        name: name,
-        description: description,
-        visibility: visibility,
-      );
+      final success = await _communityService.requestToJoin(communityId);
 
-      // Update in map
-      if (communitiesByOrg.containsKey(organisationId)) {
-        final index = communitiesByOrg[organisationId]!
-            .indexWhere((c) => c.id == communityId);
-        if (index != -1) {
-          communitiesByOrg[organisationId]![index] = updatedCommunity;
-        }
+      if (success && _currentCommunity != null) {
+        _currentCommunity = _currentCommunity!.copyWith(
+          hasPendingRequest: true,
+        );
+        notifyListeners();
       }
 
-      if (selectedCommunity?.id == communityId) {
-        selectedCommunity = updatedCommunity;
-      }
-
-      notifyListeners();
-      return updatedCommunity;
+      return success;
     } catch (e) {
-      error = e.toString();
-      notifyListeners();
-      return null;
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // Delete community
-  Future<bool> deleteCommunity({
-    required String organisationId,
-    required String communityId,
-  }) async {
-    isLoading = true;
-    error = null;
-    notifyListeners();
-
-    try {
-      await _service.deleteCommunity(
-        organisationId: organisationId,
-        communityId: communityId,
-      );
-
-      if (communitiesByOrg.containsKey(organisationId)) {
-        communitiesByOrg[organisationId]!
-            .removeWhere((c) => c.id == communityId);
-      }
-
-      if (selectedCommunity?.id == communityId) {
-        selectedCommunity = null;
-      }
-
-      notifyListeners();
-      return true;
-    } catch (e) {
-      error = e.toString();
+      _errorMessage = e.toString();
       notifyListeners();
       return false;
-    } finally {
-      isLoading = false;
-      notifyListeners();
     }
   }
 
-  // Get communities for organisation
-  List<Community> getCommunitiesForOrg(String organisationId) {
-    return communitiesByOrg[organisationId] ?? [];
+  /// Leave community
+  Future<bool> leaveCommunity(String communityId, String membershipId) async {
+    try {
+      final success =
+          await _communityService.leaveCommunity(communityId, membershipId);
+
+      if (success && _currentCommunity != null) {
+        _currentCommunity = _currentCommunity!.copyWith(
+          isMember: false,
+          memberCount: (_currentCommunity!.memberCount - 1).clamp(0, double.infinity).toInt(),
+        );
+        notifyListeners();
+      }
+
+      return success;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
 
-  // Clear error
-  void clearError() {
-    error = null;
-    notifyListeners();
-  }
-
-  // Clear selection
-  void clearSelection() {
-    selectedCommunity = null;
-    notifyListeners();
+  /// Refresh communities list
+  Future<void> refreshCommunities() async {
+    await loadCommunities(organizationId: _selectedOrgId, refresh: true);
   }
 }
