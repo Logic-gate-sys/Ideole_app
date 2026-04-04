@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/widgets/index.dart';
 import '../controllers/idea_controller.dart';
 import '../models/idea.dart';
 import '../../ratings/controllers/rating_controller.dart';
@@ -35,9 +36,32 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: const Text('Idea Details'),
+        backgroundColor: AppColors.surface,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Idea Details',
+          style: AppTextStyles.titleLarge,
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () {
+              // Handle share
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () {
+              // Handle more options
+            },
+          ),
+        ],
       ),
       body: Consumer<IdeaController>(
         builder: (context, ideaController, _) {
@@ -51,7 +75,25 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
 
           final idea = ideaController.selectedIdea;
           if (idea == null) {
-            return const Center(child: Text('Idea not found'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    size: 64,
+                    color: AppColors.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Idea not found',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           return _buildDetailView(context, idea);
@@ -62,70 +104,118 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
 
   Widget _buildDetailView(BuildContext context, Idea idea) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 24,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Category & Visibility badges
+          Row(
+            children: [
+              AppBadge(
+                label: idea.category,
+                variant: AppBadgeVariant.tonal,
+              ),
+              const SizedBox(width: 8),
+              AppBadge(
+                label: idea.visibility == IdeaVisibility.public
+                    ? 'Public'
+                    : 'Private',
+                variant: AppBadgeVariant.outlined,
+                prefix: Icon(
+                  idea.visibility == IdeaVisibility.public
+                      ? Icons.public
+                      : Icons.lock_outline,
+                  size: 12,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _formatDate(idea.createdAt),
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
           // Title
           Text(
             idea.title,
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: AppTextStyles.headlineLarge.copyWith(
+              fontSize: 32,
+              height: 1.2,
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
-          // Meta info
-          _buildMetaInfo(context, idea),
-          const SizedBox(height: 24),
+          // Author info
+          _buildAuthorInfo(idea),
+          const SizedBox(height: 32),
 
           // Problem section
           _buildSection(
             context,
             title: 'Problem',
             content: idea.problemText,
+            icon: Icons.warning_outlined,
+            accentColor: AppColors.warning,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           // Solution section
           _buildSection(
             context,
             title: 'Solution',
             content: idea.solutionText,
+            icon: Icons.lightbulb_outlined,
+            accentColor: AppColors.primary,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // Ratings section
-          _buildRatingsSection(context, idea.id),
-          const SizedBox(height: 24),
+          // Evaluation section
+          _buildEvaluationSection(context, idea.id),
+          const SizedBox(height: 32),
 
-          // Comments section
-          _buildCommentsSection(context, idea.id),
+          // Discussion section
+          _buildDiscussionSection(context, idea.id),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildMetaInfo(BuildContext context, Idea idea) {
+  Widget _buildAuthorInfo(Idea idea) {
     return Row(
       children: [
-        Chip(
-          label: Text(idea.category),
+        AppAvatar(
+          initials: idea.authorName.isEmpty
+              ? '?'
+              : idea.authorName[0].toUpperCase(),
+          size: 40,
         ),
-        const SizedBox(width: 8),
-        Icon(
-          idea.visibility == IdeaVisibility.public
-              ? Icons.public
-              : Icons.lock_outline,
-          size: 16,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          idea.visibility.toString().split('.').last.toUpperCase(),
-          style: Theme.of(context).textTheme.labelSmall,
-        ),
-        const Spacer(),
-        Text(
-          _formatDate(idea.createdAt),
-          style: Theme.of(context).textTheme.labelSmall,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                idea.authorName,
+                style: AppTextStyles.labelLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                'Posted ${_formatDate(idea.createdAt)}',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -135,32 +225,41 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
     BuildContext context, {
     required String title,
     required String content,
+    required IconData icon,
+    required Color accentColor,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium,
+        Row(
+          children: [
+            Icon(icon, color: accentColor, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: AppTextStyles.headlineSmall.copyWith(
+                fontSize: 18,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
+        const SizedBox(height: 12),
+        AppCard(
+          backgroundColor: AppColors.surfaceContainerLowest,
+          padding: const EdgeInsets.all(16),
           child: Text(
             content,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: AppTextStyles.bodyLarge.copyWith(
+              height: 1.6,
+              color: AppColors.onSurface,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildRatingsSection(BuildContext context, String ideaId) {
+  Widget _buildEvaluationSection(BuildContext context, String ideaId) {
     return Consumer<RatingController>(
       builder: (context, ratingController, _) {
         final stats = ratingController.getRatingStats(ideaId);
@@ -169,53 +268,35 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Ratings',
-              style: Theme.of(context).textTheme.titleMedium,
+              'Community Evaluation',
+              style: AppTextStyles.headlineSmall.copyWith(
+                fontSize: 18,
+              ),
             ),
             const SizedBox(height: 12),
-
-            if (stats != null)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Average: ${stats.getAverageRating().toStringAsFixed(1)}⭐',
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        Text(
-                          '${stats.getRatingCount()} ratings',
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                      ],
+            if (stats != null) ...[
+              _buildRatingStatsCard(stats),
+              const SizedBox(height: 16),
+            ] else
+              AppCard(
+                backgroundColor: AppColors.surfaceContainerLowest,
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: Text(
+                    'No evaluations yet. Be the first to rate!',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.onSurfaceVariant,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Originality: ${stats.averageOriginality.toStringAsFixed(1)}/10 • '
-                      'Feasibility: ${stats.averageFeasibility.toStringAsFixed(1)}/10 • '
-                      'Impact: ${stats.averageImpact.toStringAsFixed(1)}/10',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+                  ),
                 ),
-              )
-            else
-              const Text('No ratings yet'),
-
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
+              ),
+            AppButton(
+              label: 'Rate This Idea',
+              variant: AppButtonVariant.filled,
+              size: AppButtonSize.medium,
+              isFullWidth: true,
+              icon: Icons.star_outline,
               onPressed: () => _showRatingDialog(context, ideaId),
-              icon: const Icon(Icons.star_outline),
-              label: const Text('Rate This Idea'),
             ),
           ],
         );
@@ -223,13 +304,104 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
     );
   }
 
-  Widget _buildCommentsSection(BuildContext context, String ideaId) {
+  Widget _buildRatingStatsCard(dynamic stats) {
+    return AppCard(
+      backgroundColor: AppColors.primaryContainer.withOpacity(0.3),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Average Rating',
+                    style: AppTextStyles.labelMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${stats.getAverageRating().toStringAsFixed(1)}/10',
+                    style: AppTextStyles.headlineSmall.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '${stats.getRatingCount()} ratings',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildMetricRow(
+            'Originality',
+            stats.averageOriginality,
+            AppColors.primary,
+          ),
+          const SizedBox(height: 8),
+          _buildMetricRow(
+            'Feasibility',
+            stats.averageFeasibility,
+            AppColors.secondary,
+          ),
+          const SizedBox(height: 8),
+          _buildMetricRow(
+            'Impact',
+            stats.averageImpact,
+            AppColors.tertiary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricRow(String label, double value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.bodySmall,
+        ),
+        Row(
+          children: [
+            SizedBox(
+              width: 80,
+              child: AppLinearProgress(
+                value: value / 10,
+                height: 4,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${value.toStringAsFixed(1)}/10',
+              style: AppTextStyles.labelSmall.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDiscussionSection(BuildContext context, String ideaId) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Discussion',
-          style: Theme.of(context).textTheme.titleMedium,
+          style: AppTextStyles.headlineSmall.copyWith(
+            fontSize: 18,
+          ),
         ),
         const SizedBox(height: 12),
         CommentsSection(ideaId: ideaId),
@@ -238,85 +410,135 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
   }
 
   void _showRatingDialog(BuildContext context, String ideaId) {
-    int originality = 5;
-    int feasibility = 5;
-    int impact = 5;
+    double originality = 5;
+    double feasibility = 5;
+    double impact = 5;
 
     showDialog(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Rate This Idea'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Originality slider
-                    Text('Originality: $originality / 10'),
-                    Slider(
-                      value: originality.toDouble(),
-                      min: 1,
-                      max: 10,
-                      divisions: 9,
-                      onChanged: (value) {
-                        setState(() => originality = value.toInt());
-                      },
-                    ),
-                    const SizedBox(height: 16),
+            return Dialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Rate This Idea',
+                            style: AppTextStyles.headlineSmall,
+                          ),
+                          GestureDetector(
+                            onTap: () =>
+                                Navigator.pop(dialogContext),
+                            child: Icon(
+                              Icons.close,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
 
-                    // Feasibility slider
-                    Text('Feasibility: $feasibility / 10'),
-                    Slider(
-                      value: feasibility.toDouble(),
-                      min: 1,
-                      max: 10,
-                      divisions: 9,
-                      onChanged: (value) {
-                        setState(() => feasibility = value.toInt());
-                      },
-                    ),
-                    const SizedBox(height: 16),
+                      // Originality slider
+                      AppSlider(
+                        value: originality,
+                        min: 0,
+                        max: 10,
+                        divisions: 10,
+                        label: 'Originality',
+                        onChanged: (value) {
+                          setState(() => originality = value);
+                        },
+                      ),
+                      const SizedBox(height: 24),
 
-                    // Impact slider
-                    Text('Impact: $impact / 10'),
-                    Slider(
-                      value: impact.toDouble(),
-                      min: 1,
-                      max: 10,
-                      divisions: 9,
-                      onChanged: (value) {
-                        setState(() => impact = value.toInt());
-                      },
-                    ),
-                  ],
+                      // Feasibility slider
+                      AppSlider(
+                        value: feasibility,
+                        min: 0,
+                        max: 10,
+                        divisions: 10,
+                        label: 'Feasibility',
+                        onChanged: (value) {
+                          setState(() => feasibility = value);
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Impact slider
+                      AppSlider(
+                        value: impact,
+                        min: 0,
+                        max: 10,
+                        divisions: 10,
+                        label: 'Impact',
+                        onChanged: (value) {
+                          setState(() => impact = value);
+                        },
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Actions
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.end,
+                        children: [
+                          AppButton(
+                            label: 'Cancel',
+                            variant: AppButtonVariant.text,
+                            size: AppButtonSize.medium,
+                            onPressed: () =>
+                                Navigator.pop(dialogContext),
+                          ),
+                          const SizedBox(width: 12),
+                          AppButton(
+                            label: 'Submit',
+                            variant:
+                                AppButtonVariant.filled,
+                            size: AppButtonSize.medium,
+                            onPressed: () {
+                              context
+                                  .read<
+                                      RatingController>()
+                                  .rateIdea(
+                                    ideaId: ideaId,
+                                    originality:
+                                        originality
+                                            .toInt(),
+                                    feasibility:
+                                        feasibility
+                                            .toInt(),
+                                    impact: impact
+                                        .toInt(),
+                                  );
+                              Navigator.pop(
+                                  dialogContext);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<RatingController>().rateIdea(
-                          ideaId: ideaId,
-                          originality: originality,
-                          feasibility: feasibility,
-                          impact: impact,
-                        );
-                    Navigator.pop(dialogContext);
-                  },
-                  child: const Text('Submit'),
-                ),
-              ],
             );
           },
         );
       },
     );
-  }
   }
 
   Widget _buildErrorView(BuildContext context, IdeaController controller) {
@@ -327,18 +549,22 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: Colors.red[300],
+            color: AppColors.error,
           ),
           const SizedBox(height: 16),
           Text(
             controller.error ?? 'Error loading idea',
-            style: Theme.of(context).textTheme.bodySmall,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
+          const SizedBox(height: 24),
+          AppButton(
+            label: 'Go Back',
+            variant: AppButtonVariant.filled,
+            size: AppButtonSize.medium,
             onPressed: () => Navigator.pop(context),
-            child: const Text('Go Back'),
           ),
         ],
       ),
@@ -346,6 +572,20 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        return '${difference.inMinutes} minutes ago';
+      }
+      return '${difference.inHours} hours ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 }

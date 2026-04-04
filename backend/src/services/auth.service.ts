@@ -32,7 +32,7 @@ export const AuthService = {
         firstName: input.firstName,
         lastName: input.lastName,
         email: input.email,
-        passwordHash,
+        passwordHash:passwordHash,
       },
     });
   },
@@ -55,7 +55,46 @@ export const AuthService = {
       where: { id: user.id },
       data: { lastActive: new Date() },
     });
- 
+  },
+
+  // refresh token
+  async refreshAccessToken(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return user;
+  },
+
+  // logout
+  async logout() {
+    return { message: 'Logged out successfully' };
+  },
+
+  // get current user
+  async getMe(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        profileUrl: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return user;
   }
- 
 };

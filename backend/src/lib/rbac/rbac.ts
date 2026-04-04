@@ -53,11 +53,13 @@ export type Permission =
   | 'organisation:update:own'
   | 'organisation:delete:own'
   | 'organisation:manage:admin'
+  | 'organisation:manage:community:create'
   | 'system:view:all'
   | 'system:manage:dormancy'
   | 'system:dissolve:communities'
   | 'system:update:stages'
   | 'user:read:own'
+  | 'user:update:own'
   | 'user:manage:all'
   | 'user:delete:all';
 
@@ -88,12 +90,25 @@ export const permissionsByRole: Record<User['role'], Permission[]> = {
     'message:create',
     'message:update:own',
     'message:delete:own',
+    'community:create',
+    'community:read:all',
     'community:read:public',
     'community:read:protected',
     'community:read:own',
+    'community:update:own',
+    'community:delete:own',
     'membership:join',
     'membership:read:own',
+    'membership:approve:admin',
+    'membership:reject:admin',
+    'membership:manage:admin',
+    'membership:remove:admin',
+    'organisation:create',
+    'organisation:read:own',
+    'organisation:update:own',
+    'organisation:delete:own',
     'user:read:own',
+    'user:update:own',
   ],
   ADMIN: [
     'idea:create',
@@ -148,11 +163,13 @@ export const permissionsByRole: Record<User['role'], Permission[]> = {
     'organisation:update:own',
     'organisation:delete:own',
     'organisation:manage:admin',
+    'organisation:manage:community:create',
     'system:view:all',
     'system:manage:dormancy',
     'system:dissolve:communities',
     'system:update:stages',
     'user:read:own',
+    'user:update:own',
     'user:manage:all',
     'user:delete:all',
   ],

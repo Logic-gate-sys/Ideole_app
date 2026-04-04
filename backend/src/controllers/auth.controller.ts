@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service.ts';
-import { generateAccessToken, generateRefreshToken } from 'lib/jwt.ts';
-import {env} from '../../env.ts'
+import { generateAccessToken, generateRefreshToken, verifyToken } from '../lib/jwt.ts';
+import { env } from '../../env.ts';
 
 export const AuthControllers = {
   async register(req: Request, res:Response){
@@ -39,14 +39,20 @@ export const AuthControllers = {
     
   },
   
+  
   // login 
   async login(req: Request, res:Response){
     try{
-      const user = req.user; 
-      const newUser = await AuthService.registerUser(user); 
+      const body = req.body; 
+      const user = await AuthService.loginUser(body); 
       // access and refresh token 
-      const acessToken = await generateAccessToken(user); 
-      const refreshToken = await generateRefreshToken(user); 
+      const payload = {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      }
+      const acessToken = await generateAccessToken({...payload, type:'access'}); 
+      const refreshToken = await generateRefreshToken({...payload, type:'refresh'}); 
       //send refresh token to http-only
       res.cookie('refresh-token', refreshToken, {
              httpOnly:true,
@@ -56,13 +62,13 @@ export const AuthControllers = {
       })
 
       // return 
-      return res.status(201).json({
+      return res.status(200).json({
         success:true, 
-        data: newUser,
+        data: user,
         token: acessToken
       })
     }catch(err){
-        return res.status(500).json({
+        return res.status(401).json({
             message:'error',
             details: err.message
         })
@@ -70,13 +76,82 @@ export const AuthControllers = {
     
   },
 
+  // refresh token
+  async refresh(req: Request, res: Response) {
+    try {
+      const { refreshToken } = req.body;
+
+      const payload = await verifyToken(refreshToken);
+
+      if (!payload || payload.type !== 'refresh') {
+        return res.status(401).json({
+          message: 'error',
+          details: 'Invalid refresh token'
+        });
+      }
+
+      const user = await AuthService.refreshAccessToken(payload.userId);
+
+      // Generate new access token
+      const newAccessToken = await generateAccessToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        type: 'access'
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: user,
+        token: newAccessToken
+      });
+    } catch (err) {
+      return res.status(401).json({
+        message: 'error',
+        details: err.message
+      });
+    }
+  },
+
+  // logout
+  async logout(req: Request, res: Response) {
+    try {
+      await AuthService.logout();
+
+      // Clear refresh token cookie
+      res.clearCookie('refresh-token', {
+        httpOnly: true,
+        secure: env.NODE_ENV === 'production' ? true : false,
+        sameSite: 'lax'
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Logged out successfully'
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: 'error',
+        details: err.message
+      });
+    }
+  },
+
+  // get me
+  async getMe(req: Request, res: Response) {
+    try {
+      const user = await AuthService.getMe(req.user.id);
+
+      return res.status(200).json({
+        success: true,
+        data: user
+      });
+    } catch (err) {
+      return res.status(401).json({
+        message: 'error',
+        details: err.message
+      });
+    }
+  },
+
 }
-
-
-/*
-router.post('/auth/register',Validator.validateBody(registerSchema),  AuthControllers.register);
-  router.post('/auth/login',Validator.validateBody(loginSchema), AuthControllers.login);
-  router.post('/auth/refresh',Validator.validateBody(refreshTokenSchema), AuthControllers.refresh);
-  router.post('/auth/logout', AuthControllers.logout);
-
-*/

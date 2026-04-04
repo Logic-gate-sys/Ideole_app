@@ -15,7 +15,7 @@ export interface CustomJWTPayload extends JWTPayload{
 
 export async function generateAccessToken(user: CustomJWTPayload): Promise<string> {
   const token = await new SignJWT({
-    userId: user.id,
+    userId: user.userId,
     email: user.email,
     role: user.role,
     type: 'access',
@@ -30,7 +30,7 @@ export async function generateAccessToken(user: CustomJWTPayload): Promise<strin
 
 export async function generateRefreshToken(user: CustomJWTPayload): Promise<string> {
   const token = await new SignJWT({
-    userId: user.id,
+    userId: user.userId,
     email: user.email,
     role: user.role,
     type: 'refresh',

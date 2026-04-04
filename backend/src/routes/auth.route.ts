@@ -1,8 +1,8 @@
 import type { Router } from 'express';
-import { AuthControllers } from 'controllers/auth.controller.ts';
-import { registerSchema, loginSchema, refreshTokenSchema } from 'schema/auth.schema.ts';
+import { AuthControllers } from '../controllers/auth.controller.ts';
+import { registerSchema, loginSchema, refreshTokenSchema } from '../schema/auth.schema.ts';
 import { authenticate, authorise } from '../middlewares/auth.middleware.ts';
-import { Validator } from 'middlewares/validate.middleware.ts';
+import { Validator } from '../middlewares/validate.middleware.ts';
 
 export function setupAuthRoutes(router: Router) {
   // Public routes

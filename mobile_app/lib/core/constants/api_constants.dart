@@ -6,6 +6,23 @@ library;
 // ============== Auth Endpoints ==============
 const String loginEndpoint = "/auth/login";
 const String signupEndpoint = "/auth/signup";
+const String refreshTokenEndpoint = "/auth/refresh";
+const String logoutEndpoint = "/auth/logout";
+const String getMeEndpoint = "/auth/me";
+
+// ============== Organisation Endpoints ==============
+const String createOrganisationEndpoint = "/api/organisations";
+const String getOrganisationEndpoint = "/api/organisations/{organisationId}"; // Replace {organisationId}
+const String listOrganisationsEndpoint = "/api/organisations";
+const String updateOrganisationEndpoint = "/api/organisations/{organisationId}"; // Replace {organisationId}
+const String deleteOrganisationEndpoint = "/api/organisations/{organisationId}"; // Replace {organisationId}
+
+// ============== Community Endpoints ==============
+const String createCommunityEndpoint = "/api/organisations/{organisationId}/communities"; // Replace {organisationId}
+const String getCommunityEndpoint = "/api/organisations/{organisationId}/communities/{communityId}"; // Replace both
+const String listCommunitiesEndpoint = "/api/organisations/{organisationId}/communities"; // Replace {organisationId}
+const String updateCommunityEndpoint = "/api/organisations/{organisationId}/communities/{communityId}"; // Replace both
+const String deleteCommunityEndpoint = "/api/organisations/{organisationId}/communities/{communityId}"; // Replace both
 
 // ============== Idea Endpoints ==============
 const String createIdeaEndpoint = "/ideas";

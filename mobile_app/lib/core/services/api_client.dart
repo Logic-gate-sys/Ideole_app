@@ -142,6 +142,40 @@ class ApiClient {
     }
   }
 
+  /// PUT request
+  Future<Map<String, dynamic>> put(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    try {
+      final url = _buildUrl(endpoint);
+
+      if (Environment.isDebug) {
+        debugLog('PUT $url');
+        debugLog('Body: $body');
+      }
+
+      final response = await _client.put(
+        Uri.parse(url),
+        headers: _getHeaders(),
+        body: body != null ? jsonEncode(body) : null,
+      ).timeout(
+        Duration(seconds: Environment.apiTimeout),
+        onTimeout: () => throw ApiException(
+          message: 'Request timeout',
+          statusCode: null,
+          path: endpoint,
+        ),
+      );
+
+      return ResponseHandler.handleResponse(response, endpoint);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ResponseHandler.handleException(e, endpoint);
+    }
+  }
+
   /// DELETE request
   Future<Map<String, dynamic>> delete(String endpoint) async {
     try {

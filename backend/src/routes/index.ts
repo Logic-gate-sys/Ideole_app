@@ -1,13 +1,19 @@
 import { Router } from 'express';
-import { authenticate } from '../middlewares/auth.middleware.ts';
 import { setupAuthRoutes } from './auth.route.ts';
+import { setupOrganisationRoutes } from './organisation.route.ts';
+import { setupCommunityRoutes } from './community.route.ts';
+import { setupUserRoutes } from './user.route.ts';
+import { setupMembershipRoutes } from './membership.route.ts';
+import { setupIdeaRoutes } from './idea.route.ts';
 
 const router = Router();
 
-// Apply authentication middleware globally (optional)
-router.use(authenticate);
-
 // Setup all routes
 setupAuthRoutes(router);
+setupOrganisationRoutes(router);
+setupCommunityRoutes(router);
+setupUserRoutes(router);
+setupMembershipRoutes(router);
+setupIdeaRoutes(router);
 
 export default router;

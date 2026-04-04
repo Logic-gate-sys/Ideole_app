@@ -10,6 +10,7 @@ export function authorize(
     membershipStatus?: string;
     isOwner?: boolean;
     resourceVisibility?: string;
+    hasResource?: boolean;
   },
 ): { code: string; message: string } | null {
  if (!user) {
@@ -30,8 +31,12 @@ export function authorize(
   }
 
   // membership status if in community context
+  // Only check membership for operations that don't involve ownership checks
   if (context?.isMember === false && permission.includes('community')) {
-    return { code: 'NOT_MEMBER', message: 'User is not a community member' };
+    // Skip if it's a creation, public read, or owner-specific operation
+    if (!permission.includes('create') && !permission.includes(':all') && !permission.includes(':public') && !permission.includes(':own')) {
+      return { code: 'NOT_MEMBER', message: 'User is not a community member' };
+    }
   }
 
   if (context?.membershipStatus === 'BANNED') {
@@ -43,7 +48,8 @@ export function authorize(
   }
 
   // ownership for owner-only actions
-  if (permission.includes(':own') && !context?.isOwner) {
+  // Only enforce if a specific resource was actually checked
+  if (permission.includes(':own') && context?.hasResource && !context?.isOwner) {
     return { code: 'NOT_OWNER', message: 'User is not the owner' };
   }
 
@@ -66,6 +72,7 @@ export function buildAuthContext(user: User, resource?: {visibility?: string;own
   return {
     userStatus: user?.status,
     isOwner: user && resource?.ownerId === user.id,
+    hasResource: !!resource,
     isMember: membership != null,
     membershipStatus: membership?.status,
     resourceVisibility: resource?.visibility,

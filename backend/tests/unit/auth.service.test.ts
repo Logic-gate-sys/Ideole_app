@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { AuthService } from '../../src/services/auth.service.ts';
 
 describe('AuthService', () => {
-  it('should register and return tokens', async () => {
+  it('should register and return user', async () => {
     const result = await AuthService.registerUser({
       username: 'user1',
       firstName: 'Test',
@@ -10,9 +10,9 @@ describe('AuthService', () => {
       email: 'user1@example.com',
       password: 'Password123!',
     });
-    expect(result.user.email).toBe('user1@example.com');
-    expect(result.accessToken).toBeDefined();
-    expect(result.refreshToken).toBeDefined();
+    expect(result.email).toBe('user1@example.com');
+    expect(result.username).toBe('user1');
+    expect(result.id).toBeDefined();
   });
 
   it('should reject duplicate email', async () => {
@@ -53,8 +53,8 @@ describe('AuthService', () => {
     ).rejects.toThrow();
   });
 
-  it('should login and return tokens', async () => {
-    await AuthService.registerUser({
+  it('should login and return user', async () => {
+    const registered = await AuthService.registerUser({
       username: 'loginuser',
       firstName: 'Login',
       lastName: 'User',
@@ -65,8 +65,8 @@ describe('AuthService', () => {
       email: 'login@example.com',
       password: 'Password123!',
     });
-    expect(result.accessToken).toBeDefined();
-    expect(result.refreshToken).toBeDefined();
+    expect(result.email).toBe('login@example.com');
+    expect(result.id).toBe(registered.id);
   });
 
   it('should reject wrong password', async () => {
@@ -86,7 +86,7 @@ describe('AuthService', () => {
   });
 
   it('should reject non-existent user', async () => {
-    expect(
+    await expect(
       AuthService.loginUser({
         email: 'notfound@example.com',
         password: 'Password123!',
@@ -94,7 +94,7 @@ describe('AuthService', () => {
     ).rejects.toThrow();
   });
 
-  it('should refresh access token', async () => {
+  it('should refresh and return user', async () => {
     const user = await AuthService.registerUser({
       username: 'refreshuser',
       firstName: 'Refresh',
@@ -102,13 +102,33 @@ describe('AuthService', () => {
       email: 'refresh@example.com',
       password: 'Password123!',
     });
-    const result = await AuthService.refreshAccessToken(user.refreshToken!);
-    expect(result.accessToken).toBeDefined();
+    const result = await AuthService.refreshAccessToken(user.id);
+    expect(result.id).toBe(user.id);
+    expect(result.email).toBe('refresh@example.com');
   });
 
-  it('should reject invalid refresh token', async () => {
-    expect(
-      AuthService.refreshAccessToken('invalid.token'),
+  it('should reject invalid user on refresh', async () => {
+    await expect(
+      AuthService.refreshAccessToken('invalid-id'),
     ).rejects.toThrow();
+  });
+
+  it('should getMe return user profile', async () => {
+    const user = await AuthService.registerUser({
+      username: 'meuser',
+      firstName: 'Me',
+      lastName: 'User',
+      email: 'me@example.com',
+      password: 'Password123!',
+    });
+    const result = await AuthService.getMe(user.id);
+    expect(result.email).toBe('me@example.com');
+    expect(result.username).toBe('meuser');
+    expect(result.firstName).toBe('Me');
+  });
+
+  it('should logout successfully', async () => {
+    const result = await AuthService.logout();
+    expect(result.message).toBeDefined();
   });
 });

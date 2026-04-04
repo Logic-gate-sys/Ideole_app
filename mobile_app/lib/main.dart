@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/services/token_storage.dart';
+import 'core/widgets/index.dart';
 import 'features/auth/services/auth_service.dart';
 import 'features/ideas/controllers/idea_controller.dart';
 import 'features/ratings/controllers/rating_controller.dart';
 import 'features/invites/controllers/invite_controller.dart';
 import 'features/comments/controllers/comment_controller.dart';
-import 'core/theme/app_theme.dart';
 import 'screens/app_shell.dart';
 
 void main() async {
@@ -48,7 +48,7 @@ class MyApp extends StatelessWidget {
         title: 'Ideole',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        themeMode: ThemeMode.system,
+        themeMode: ThemeMode.light,
         home: const AppShell(),
       ),
     );

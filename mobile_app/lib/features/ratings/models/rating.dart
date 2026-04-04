@@ -1,53 +1,42 @@
-enum RatingType {
-  originality,
-  feasibility,
-  impact,
-}
-
-RatingType ratingTypeFromString(String value) {
-  return RatingType.values.firstWhere(
-    (r) => r.toString().split('.').last.toLowerCase() == value.toLowerCase(),
-    orElse: () => RatingType.originality,
-  );
-}
-
-String ratingTypeToString(RatingType type) {
-  return type.toString().split('.').last;
-}
-
+/// Rating model - stores user's evaluation scores for each criterion
 class Rating {
   final String id;
   final String ideaId;
   final String reviewerId;
-  final int originality;   // 1-10
-  final int feasibility;   // 1-10
-  final int impact;        // 1-10
+  final Map<String, int> scores;  // criteriaId -> score (1-10)
   final DateTime createdAt;
 
   Rating({
     required this.id,
     required this.ideaId,
     required this.reviewerId,
-    required this.originality,
-    required this.feasibility,
-    required this.impact,
+    required this.scores,
     required this.createdAt,
   });
 
-  /// Calculate average score across all dimensions
+  /// Get average score across all criteria
   double getAverageScore() {
-    return (originality + feasibility + impact) / 3.0;
+    if (scores.isEmpty) return 0.0;
+    return scores.values.reduce((a, b) => a + b) / scores.length;
   }
+
+  /// Get score for a specific criterion
+  int? getScoreForCriteria(String criteriaId) => scores[criteriaId];
 
   /// Create Rating from JSON response from backend API
   factory Rating.fromJson(Map<String, dynamic> json) {
+    // Parse scores map - handle potential type variations
+    final scoresJson = json['scores'] as Map<String, dynamic>? ?? {};
+    final scores = <String, int>{};
+    scoresJson.forEach((key, value) {
+      scores[key] = (value as num).toInt();
+    });
+
     return Rating(
       id: json['id'] ?? '',
       ideaId: json['ideaId'] ?? '',
       reviewerId: json['reviewerId'] ?? '',
-      originality: json['originality'] ?? 5,
-      feasibility: json['feasibility'] ?? 5,
-      impact: json['impact'] ?? 5,
+      scores: scores,
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
     );
   }
@@ -57,54 +46,52 @@ class Rating {
     'id': id,
     'ideaId': ideaId,
     'reviewerId': reviewerId,
-    'originality': originality,
-    'feasibility': feasibility,
-    'impact': impact,
+    'scores': scores,
     'createdAt': createdAt.toIso8601String(),
   };
 
   @override
-  String toString() => 'Rating(ideaId: $ideaId, originality: $originality, feasibility: $feasibility, impact: $impact)';
+  String toString() => 'Rating(ideaId: $ideaId, scores: $scores, average: ${getAverageScore().toStringAsFixed(1)})';
 }
 
+/// Aggregated rating statistics for an idea
 class RatingStats {
   final String ideaId;
   final int totalRatings;
-  final double averageOriginality;
-  final double averageFeasibility;
-  final double averageImpact;
+  final Map<String, double> averageScores;  // criteriaId -> average score
   final double averageOverall;
 
   RatingStats({
     required this.ideaId,
     required this.totalRatings,
-    required this.averageOriginality,
-    required this.averageFeasibility,
-    required this.averageImpact,
+    required this.averageScores,
     required this.averageOverall,
   });
 
+  /// Get average score for a specific criterion
+  double getAverageForCriteria(String criteriaId) => averageScores[criteriaId] ?? 0.0;
+
   /// Create RatingStats from JSON response
   factory RatingStats.fromJson(Map<String, dynamic> json) {
+    final averageScoresJson = json['averageScores'] as Map<String, dynamic>? ?? {};
+    final averageScores = <String, double>{};
+    averageScoresJson.forEach((key, value) {
+      averageScores[key] = (value as num).toDouble();
+    });
+
     return RatingStats(
       ideaId: json['ideaId'] ?? '',
       totalRatings: json['totalRatings'] ?? 0,
-      averageOriginality: (json['averageOriginality'] as num?)?.toDouble() ?? 0.0,
-      averageFeasibility: (json['averageFeasibility'] as num?)?.toDouble() ?? 0.0,
-      averageImpact: (json['averageImpact'] as num?)?.toDouble() ?? 0.0,
+      averageScores: averageScores,
       averageOverall: (json['averageOverall'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
-  /// Get average rating across all dimensions
-  double getOverallAverage() {
-    return averageOverall;
-  }
+  /// Get overall average rating
+  double getOverallAverage() => averageOverall;
 
   /// Get rating count
-  int getRatingCount() {
-    return totalRatings;
-  }
+  int getRatingCount() => totalRatings;
 
   @override
   String toString() => 'RatingStats(ideaId: $ideaId, overall: $averageOverall)';

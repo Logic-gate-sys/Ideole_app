@@ -85,22 +85,23 @@ class RatingController extends ChangeNotifier {
   // Rating Creation Methods
   // ============================================================
 
-  /// Rate an idea with three separate dimensions
+  /// Rate an idea with individual criterion scores
+  /// Each score should be 1-10
   /// Shows success/error messages
   /// Returns true if successful, false otherwise
   Future<bool> rateIdea({
     required String ideaId,
-    required int originality,  // 1-10
-    required int feasibility,  // 1-10
-    required int impact,       // 1-10
+    required int originality,
+    required int feasibility,
+    required int impact,
   }) async {
     // Validate scores
-    if (originality < 1 || originality > 10 ||
-        feasibility < 1 || feasibility > 10 ||
-        impact < 1 || impact > 10) {
-      _error = 'Rating scores must be between 1 and 10';
-      notifyListeners();
-      return false;
+    for (final score in [originality, feasibility, impact]) {
+      if (score < 1 || score > 10) {
+        _error = 'Rating scores must be between 1 and 10';
+        notifyListeners();
+        return false;
+      }
     }
 
     _isLoading = true;
