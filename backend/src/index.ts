@@ -1,6 +1,5 @@
 import {app} from './app.ts'
 import { env } from './../env.ts'
-import { profileEnd } from 'console';
 
 
 const PORT = env.PORT || 3000; 

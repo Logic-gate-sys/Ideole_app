@@ -1,0 +1,136 @@
+@startuml
+skinparam linetype ortho
+skinparam shadowing false
+skinparam class {
+    BackgroundColor White
+    ArrowColor #2688d4
+    BorderColor #2688d4
+}
+
+enum Role {
+    USER
+    ADMIN
+}
+
+enum Stage {
+    INCEPTION
+    COLLABORATIVE
+    IMPLEMENTATION
+}
+
+enum Visibility {
+    PUBLIC
+    PROTECTED
+    PRIVATE
+}
+
+enum Status {
+    ACTIVE
+    DORMANT
+    PENDING
+    BANNED
+}
+
+enum ContextType {
+    IDEA
+    COMMUNITY
+    DIRECT
+}
+
+class User {
+    +id: UUID
+    +username: String
+    +email: String
+    +password_hash: String
+    +profile_url: String
+    +role: Role
+    +created_at: DateTime
+    +last_active: DateTime
+}
+
+class Idea {
+    +id: UUID
+    +owner_id: UUID
+    +title: String
+    +description: Text
+    +visibility: Visibility
+    +stage: Stage
+    +community_id: UUID [NULLABLE]
+    +organization_id: UUID [NULLABLE]
+    +created_at: DateTime
+}
+
+class Community {
+    +id: UUID
+    +admin_id: UUID
+    +name: String
+    +description: Text
+    +visibility: Visibility
+    +status: Status
+    +dormant_since: DateTime [NULLABLE]
+}
+
+class Membership {
+    +id: UUID
+    +user_id: UUID
+    +organisation_id: UUID [NULLABLE]
+    +community_id: UUID
+    +role: String
+    +status: Status
+    +joined_at: DateTime
+}
+
+class Organisation {
+    +id: UUID
+    +owner_id: UUID
+    +name: String
+    +tier: String
+    +max_communities: Integer
+    +created_at: DateTime
+}
+
+class RatingComment {
+    +id: UUID
+    +idea_id: UUID
+    +author_id: UUID
+    +comment_text: Text
+    +originality_score: Int
+    +feasibility_score: Int
+    +impact_score: Int
+    +is_latest_rating: Boolean
+    +created_at: DateTime
+}
+
+class Conversation {
+    +id: UUID
+    +context_id: UUID
+    +context_type: ContextType
+    +created_at: DateTime
+}
+
+class Message {
+    +id: UUID
+    +conversation_id: UUID
+    +sender_id: UUID
+    +content: Text
+    +sent_at: DateTime
+}
+
+' Relationships
+User "1" -- "0..*" Idea : owns >
+User "1" -- "0..*" Membership : has >
+User "1" -- "0..*" RatingComment : authors >
+User "1" -- "0..*" Message : sends >
+
+Organisation "1" -- "0..*" Community : contains >
+Organisation "1" -- "0..*" Membership : governs >
+
+Community "1" -- "0..*" Idea : hosts >
+Community "1" -- "0..*" Membership : has members >
+
+Idea "1" -- "0..*" RatingComment : receives >
+Idea "1" -- "0..*" Conversation : discusses >
+
+Conversation "1" -- "0..*" Message : contains >
+
+@enduml

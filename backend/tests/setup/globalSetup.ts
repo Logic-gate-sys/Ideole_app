@@ -1,33 +1,42 @@
 import { execSync } from 'node:child_process';
 import { prisma } from '../../src/lib/prisma.ts';
 
-
 export async function setup() {
-  console.log('--- Preparing Test Environment ---');
-  
   try {
-    // sync db
-    console.log('Syncing database schema...');
-    execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
-    execSync('npx prisma generate')
-
+    // Test database connection
     await prisma.$connect();
-    console.log('--- Test Environment Ready ---');
+    console.log('Database connected');
+
+    // Reset database using Prisma
+    execSync('NODE_ENV=test npx prisma migrate reset --force', {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+    });
+
+    // generate client
+    execSync('NODE_ENV=test npx prisma generate ', {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+    });
+
+    console.log('Database reset');
   } catch (error) {
     console.error('Global setup failed:', error);
     process.exit(1);
   }
 }
 
-
 export async function teardown() {
   try {
-    execSync('npx prisma db push --force-reset', { stdio: 'inherit' }); 
+    // Reset database for clean state
+    execSync('NODE_ENV=test npx prisma migrate reset --force', {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+    });
+
     await prisma.$disconnect();
-    console.log('--- Teardown Complete ---');
-    process.exit(0); 
+    console.log('Database cleaned and disconnected');
   } catch (error) {
-      console.error('Global teardown encountered an error:', error);
-      process.exit(1); 
+    console.error('Global teardown failed:', error);
   }
 }

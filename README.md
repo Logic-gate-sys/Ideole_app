@@ -46,7 +46,7 @@
 ## **1. Users / Authentication**
 
 | Method | Endpoint       | Description              |
-| ------ | -------------- | ------------------------ |
+| ------ | -------------- | ------------------------ |![alt text](image.png)
 | POST   | `/auth/signup` | Register new user        |
 | POST   | `/auth/login`  | Login, returns JWT       |
 | GET    | `/users/me`    | Get current user profile |

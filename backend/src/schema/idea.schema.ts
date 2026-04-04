@@ -1,72 +1,35 @@
 import { z } from 'zod';
-import { Visibility } from '../types/index.ts';
 
-// Create idea schema
 export const createIdeaSchema = z.object({
-  title: z.string()
-    .min(5, 'Title must be at least 5 characters')
-    .max(200, 'Title must not exceed 200 characters'),
-  problemText: z.string()
-    .min(10, 'Problem description must be at least 10 characters')
-    .max(2000, 'Problem description must not exceed 2000 characters'),
-  solutionText: z.string()
-    .min(10, 'Solution description must be at least 10 characters')
-    .max(2000, 'Solution description must not exceed 2000 characters'),
-  category: z.string()
-    .min(2, 'Category must be provided')
-    .max(50, 'Category must not exceed 50 characters'),
-  visibility: z.enum(['PRIVATE', 'COMMUNITY', 'PUBLIC'])
-    .default('PRIVATE'),
+  title: z.string().min(3).max(200),
+  description: z.string().min(10).max(5000),
+  visibility: z.enum(['PUBLIC', 'PROTECTED', 'PRIVATE']),
+  communityId: z.string().uuid().optional(),
+  organisationId: z.string().uuid().optional(),
+  criteria: z
+    .array(
+      z.object({
+        name: z.string().min(2).max(100),
+        description: z.string().min(5).max(500),
+      })
+    )
+    .optional(),
 });
 
-// Update idea schema
 export const updateIdeaSchema = z.object({
-  title: z.string()
-    .min(5, 'Title must be at least 5 characters')
-    .max(200, 'Title must not exceed 200 characters')
-    .optional(),
-  problemText: z.string()
-    .min(10, 'Problem description must be at least 10 characters')
-    .max(2000, 'Problem description must not exceed 2000 characters')
-    .optional(),
-  solutionText: z.string()
-    .min(10, 'Solution description must be at least 10 characters')
-    .max(2000, 'Solution description must not exceed 2000 characters')
-    .optional(),
-  category: z.string()
-    .min(2, 'Category must be provided')
-    .max(50, 'Category must not exceed 50 characters')
-    .optional(),
-  visibility: z.enum(['PRIVATE', 'COMMUNITY', 'PUBLIC'])
-    .optional(),
+  title: z.string().min(3).max(200).optional(),
+  description: z.string().min(10).max(5000).optional(),
+  visibility: z.enum(['PUBLIC', 'PROTECTED', 'PRIVATE']).optional(),
+  stage: z.enum(['INCEPTION', 'COLLABORATIVE', 'IMPLEMENTATION']).optional(),
 });
 
-// Toggle idea visibility schema
-export const togglePublicSchema = z.object({
-  body: z.object({
-    isPublic: z.boolean(),
-  }),
+export const createCriteriaSchema = z.object({
+  name: z.string().min(2).max(100),
+  description: z.string().min(5).max(500),
 });
 
-// Idea ID parameter schema
-export const ideaIdParamSchema = z.object({
-  params: z.object({
-    ideaId: z.string().uuid('Invalid idea ID format'),
-  }),
+export const updateCriteriaSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  description: z.string().min(5).max(500).optional(),
+  order: z.number().int().min(0).optional(),
 });
-
-// Query schema for getting ideas
-export const getIdeasQuerySchema = z.object({
-  query: z.object({
-    page: z.string().regex(/^\d+$/, 'Page must be a number').transform(Number).default('1'),
-    limit: z.string().regex(/^\d+$/, 'Limit must be a number').transform(Number).default('10'),
-    visibility: z.enum(['PRIVATE', 'COMMUNITY', 'PUBLIC']).optional(),
-  }),
-});
-
-// Export types
-export type CreateIdeaRequest = z.infer<typeof createIdeaSchema>;
-export type UpdateIdeaRequest = z.infer<typeof updateIdeaSchema>;
-export type TogglePublicRequest = z.infer<typeof togglePublicSchema>;
-export type IdeaIdParam = z.infer<typeof ideaIdParamSchema>;
-export type GetIdeasQuery = z.infer<typeof getIdeasQuerySchema>;

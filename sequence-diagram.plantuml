@@ -1,0 +1,101 @@
+@startuml IdeoleAppSequence
+skinparam style strictuml
+autonumber
+
+actor "Org Owner" as O
+participant ":OrgManager" as OrgM
+participant ":CommunityService" as Comm
+participant ":CronJob" as Cron
+database ":PostgreSQL" as DB
+
+== Provisioning & Activation ==
+O -> OrgM : createOrganisation(name, tier)
+activate OrgM
+    OrgM -> DB : insertOrg(status=ACTIVE)
+    DB -->> OrgM : orgID
+    OrgM -->> O : return success
+deactivate OrgM
+
+== Inactivity & Dormancy ==
+Cron -> Comm : checkDormancyStatus()
+activate Comm
+    Comm -> DB : selectInactive(threshold=90days)
+    activate DB
+    DB -->> Comm : inactiveList
+    deactivate DB
+
+    alt status == ACTIVE && inactiveDays > 90
+        Comm -> DB : updateStatus(DORMANT, timestamp)
+        DB -->> Comm : success
+    else status == DORMANT && dormantDays > 90
+        Comm -> DB : deleteCascade(communityID)
+        activate DB
+        note right: Deletes Ideas, Ratings, \nand Conversations.
+        DB -->> Comm : success
+        deactivate DB
+    end
+    Comm -->> Cron : signalComplete
+deactivate Comm
+
+
+skinparam style strictuml
+
+actor "Founder" as F
+participant ":IdeaController" as IC
+participant ":RatingEngine" as RE
+actor "Reviewer" as R
+
+== Inception ==
+F -> IC : postIdea(content, visibility)
+activate IC
+    IC -> IC : validateMembership()
+    IC -->> F : 201 Created (Status: INCEPTION)
+deactivate IC
+
+== Iterative Refinement ==
+R -> RE : submitStructuredRate(scores)
+activate RE
+    RE -> RE : togglePreviousRatings(isLatest=false)
+    RE -->> R : return confirmation
+deactivate RE
+
+alt averageScore > Threshold
+    IC -> IC : updateStage(COLLABORATIVE)
+    IC -->> F : notify: "Idea Validated"
+else averageScore < Threshold
+    IC -> IC : updateStage(INCEPTION)
+    note right: Idea remains in \nrefinement loop.
+end
+
+skinparam style strictuml
+
+actor "Guest" as G
+participant ":AuthService" as Auth
+participant ":MembershipManager" as MM
+actor "Admin" as A
+
+== Onboarding ==
+G -> Auth : register(email, profile_link)
+activate Auth
+    Auth -> Auth : hashPassword()
+    Auth -->> G : return token (Status: REGISTERED)
+deactivate Auth
+
+== Community Access ==
+G -> MM : requestToJoin(communityID)
+activate MM
+    MM -> MM : createPendingEntry()
+    MM -->> G : 202 Accepted
+deactivate MM
+
+A -> MM : approveMember(userID)
+activate MM
+    alt adminAction == APPROVE
+        MM -> MM : setStatus(ACTIVE)
+        MM -->> G : notify: "Access Granted"
+    else adminAction == REJECT
+        MM -> MM : setStatus(BANNED)
+        MM -->> G : notify: "Access Denied"
+    end
+deactivate MM
+@enduml
