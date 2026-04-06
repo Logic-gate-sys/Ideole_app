@@ -11,10 +11,10 @@ class SignInScreen extends StatefulWidget {
   final VoidCallback onSuccess;
 
   const SignInScreen({
-    Key? key,
+    super.key,
     required this.onSignUpPressed,
     required this.onSuccess,
-  }) : super(key: key);
+  });
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();

@@ -10,9 +10,9 @@ class CommunityDetailScreen extends StatefulWidget {
   final String communityId;
 
   const CommunityDetailScreen({
-    Key? key,
+    super.key,
     required this.communityId,
-  }) : super(key: key);
+  });
 
   @override
   State<CommunityDetailScreen> createState() => _CommunityDetailScreenState();

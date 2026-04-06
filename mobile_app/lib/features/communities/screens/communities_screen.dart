@@ -8,7 +8,7 @@ import 'community_detail_screen.dart';
 
 /// Communities Screen - Displays list of communities
 class CommunitiesScreen extends StatefulWidget {
-  const CommunitiesScreen({Key? key}) : super(key: key);
+  const CommunitiesScreen({super.key});
 
   @override
   State<CommunitiesScreen> createState() => _CommunitiesScreenState();

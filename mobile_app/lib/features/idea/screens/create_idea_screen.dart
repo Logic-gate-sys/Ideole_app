@@ -8,7 +8,7 @@ import '../controllers/create_idea_controller.dart';
 
 /// Create Idea Screen - Allows users to submit new ideas
 class CreateIdeaScreen extends StatefulWidget {
-  const CreateIdeaScreen({Key? key}) : super(key: key);
+  const CreateIdeaScreen({super.key});
 
   @override
   State<CreateIdeaScreen> createState() => _CreateIdeaScreenState();

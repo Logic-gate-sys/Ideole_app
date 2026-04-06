@@ -7,9 +7,9 @@ class AuthScreen extends StatefulWidget {
   final VoidCallback onAuthSuccess;
 
   const AuthScreen({
-    Key? key,
+    super.key,
     required this.onAuthSuccess,
-  }) : super(key: key);
+  });
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();

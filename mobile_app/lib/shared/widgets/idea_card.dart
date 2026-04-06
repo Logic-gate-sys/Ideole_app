@@ -10,11 +10,11 @@ class IdeaCard extends StatelessWidget {
   final VoidCallback? onMorePressed;
 
   const IdeaCard({
-    Key? key,
+    super.key,
     required this.idea,
     this.onTap,
     this.onMorePressed,
-  }) : super(key: key);
+  });
   Color _getVisibilityColor() {
     switch (idea.visibility) {
       case 'PUBLIC':

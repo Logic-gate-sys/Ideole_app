@@ -12,10 +12,9 @@ import 'features/communities/screens/communities_screen.dart';
 void main() async {
   // Initialize app
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize storage service (SharedPreferences)
+  // Initialize storage services 
   await StorageService().init();
-  
+
   runApp(const MyApp());
 }
 
@@ -84,7 +83,7 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-/// Main app with bottom tab navigation
+// Main app with bottom tab navigation
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
@@ -131,7 +130,7 @@ class _MainAppState extends State<MainApp> {
     );
   }
 
-  /// Build the appropriate screen based on selected tab
+  // Build the appropriate screen based on selected tab
   Widget _buildBody(int index) {
     switch (index) {
       case 0:
@@ -147,7 +146,7 @@ class _MainAppState extends State<MainApp> {
     }
   }
 
-  /// Build placeholder for tabs not yet implemented
+  // Build placeholder for tabs not yet implemented
   Widget _buildPlaceholder(String tabName) {
     return Center(
       child: Column(
@@ -160,7 +159,7 @@ class _MainAppState extends State<MainApp> {
           ),
           const SizedBox(height: 16),
           Text(
-            '$tabName',
+            tabName,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),

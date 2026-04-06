@@ -11,7 +11,7 @@ import '../../idea/controllers/idea_detail_controller.dart';
 
 /// Idea Feed Screen - Displays paginated list of ideas with infinite scroll
 class IdeaFeedScreen extends StatefulWidget {
-  const IdeaFeedScreen({Key? key}) : super(key: key);
+  const IdeaFeedScreen({super.key});
 
   @override
   State<IdeaFeedScreen> createState() => _IdeaFeedScreenState();

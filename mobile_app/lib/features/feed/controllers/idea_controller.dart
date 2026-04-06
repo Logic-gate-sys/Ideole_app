@@ -8,7 +8,7 @@ class IdeaController extends ChangeNotifier {
 
   // State
   List<Idea> _ideas = [];
-  List<Idea> _filteredIdeas = [];
+  final List<Idea> _filteredIdeas = [];
   bool _isLoading = false;
   bool _isRefreshing = false;
   bool _hasMore = true;

@@ -19,7 +19,7 @@ class IdeaService {
       final queryParams = {
         'limit': limit.toString(),
         'offset': offset.toString(),
-        if (filter != null) 'filter': filter,
+        'filter': ?filter,
       };
 
       final response = await ApiService.get(
@@ -78,8 +78,8 @@ class IdeaService {
           'title': title,
           'description': description,
           'visibility': visibility,
-          if (communityId != null) 'communityId': communityId,
-          if (organizationId != null) 'organizationId': organizationId,
+          'communityId': ?communityId,
+          'organizationId': ?organizationId,
         },
         token: token,
       );

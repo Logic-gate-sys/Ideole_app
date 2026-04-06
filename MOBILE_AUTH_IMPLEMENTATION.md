@@ -1,20 +1,41 @@
-# Auth Feature - Implementation Guide
+# Mobile Auth Implementation Status
 
-**Status**: ✅ Complete  
-**Date**: April 4, 2026  
-**Screens**: Sign In, Sign Up  
-**API Integration**: Full (login, register)
+**Last Updated:** April 4, 2026  
+**Overall Status:** 🟡 **Partially Complete** - Core features working, critical middleware missing  
+**Priority Issue:** API request interceptor needed for automatic token management
+
+---
+
+## Completion Summary
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Sign In UI | ✅ Complete | Form validation, error display working |
+| Sign Up UI | ✅ Complete | Full form with password strength checks |
+| Auth Service (Core Logic) | ✅ Complete | Login, register, logout, refresh methods |
+| Token Storage | ✅ Complete | Secure storage with SharedPreferences |
+| User Persistence | ✅ Complete | User data cached locally |
+| State Management | ✅ Complete | ChangeNotifier-based controller |
+| App Integration | ✅ Complete | Auth check on startup |
+| API Interceptor | ❌ Missing | **CRITICAL** - Tokens not auto-attached |
+| Session Management | ⚠️ Partial | Basic implementation, no timeout |
+| Token Refresh | ⚠️ Manual | Works but not automatic |
+| Password Reset | ❌ Missing | No UI or API integration |
+| Email Verification | ❌ Missing | No UI or API integration |
+| Biometric Auth | ❌ Missing | Future enhancement |
+| Social Auth | ❌ Missing | Future enhancement |
+| 2FA | ❌ Missing | Future enhancement |
 
 ---
 
 ## Architecture Overview
 
-The Auth feature follows a **modular, layered architecture**:
+The Auth feature uses a **modular layered architecture**:
 
 ```
 Screens (UI)
     ↓ Consumer<AuthController>
-Controllers (State Management)
+Controllers (State Management - ChangeNotifier)
     ↓ Uses
 Services (Business Logic - API calls, validation)
     ↓ Uses
@@ -30,22 +51,25 @@ Utilities (API client, Storage)
 ```
 lib/
 ├── models/
-│   ├── user.dart              # User model
-│   └── auth.dart              # Auth response, exceptions
+│   ├── user.dart                    # ✅ User model with serialization
+│   └── auth.dart                    # ✅ AuthResponse, exceptions
 ├── services/
-│   ├── api_service.dart       # HTTP client
-│   ├── auth_service.dart      # Auth business logic
-│   └── storage_service.dart   # Local storage (tokens, user)
+│   ├── api_service.dart             # ⚠️ HTTP client (needs interceptor)
+│   ├── auth_service.dart            # ✅ Auth business logic
+│   ├── storage_service.dart         # ✅ Local token/user storage
+│   ├── idea_service.dart            # ✅ Ideas API (fixed response parsing)
+│   └── community_service.dart       # ✅ Communities API (fixed response parsing)
 ├── shared/widgets/
-│   ├── sahara_buttons.dart    # Button components
-│   └── sahara_text_field.dart # Text input components
-└── features/auth/
-    ├── controllers/
-    │   └── auth_controller.dart  # State management (ChangeNotifier)
-    └── screens/
-        ├── auth_screen.dart      # Auth wrapper (toggles Sign In/Up)
-        ├── sign_in_screen.dart   # Sign in form
-        └── sign_up_screen.dart   # Sign up form
+│   ├── sahara_buttons.dart          # ✅ Button components
+│   └── sahara_text_field.dart       # ✅ Text input components
+├── features/auth/
+│   ├── controllers/
+│   │   └── auth_controller.dart     # ✅ State management (ChangeNotifier)
+│   └── screens/
+│       ├── auth_screen.dart         # ✅ Auth wrapper (toggles Sign In/Up)
+│       ├── sign_in_screen.dart      # ✅ Sign in form
+│       └── sign_up_screen.dart      # ✅ Sign up form
+└── main.dart                        # ✅ App entry with auth initialization
 ```
 
 ---
@@ -141,39 +165,608 @@ user_data         → JSON-encoded User object
 user_id           → User's ID for quick lookup
 ```
 
-### **3. Reusable Components** (`shared/widgets/`)
+---
 
-#### `sahara_text_field.dart`
-**SaharaTextField**: Text input following Sahara design
-- Props: label, hint, controller, onChanged, validator, keyboardType, maxLines, obscureText, prefixIcon, suffixIcon, errorText
-- Features:
-  - Focus state styling (color change on focus)
-  - Error state with red border + message
-  - Label above field
-  - Optional prefix/suffix icons
-  - Uses Sahara colors and typography
+## ✅ Fully Implemented Features
 
-**SaharaPasswordField**: Password-specific input
-- Extends SaharaTextField
-- Show/hide password toggle button
-- Masked by default
+### 1. Sign In Flow
+**File**: `features/auth/screens/sign_in_screen.dart`
 
-#### `sahara_buttons.dart`
-**PrimaryButton**: Filled button (primary action)
-- Props: label, onPressed, isLoading, isEnabled, width, padding
-- Features:
-  - Terracotta (#C2652A) background
-  - Shows spinner while loading
-  - Disables when isLoading or isEnabled=false
-  - Full width by default
+**User Journey**:
+1. User enters email and password
+2. Form validates (non-empty, basic format)
+3. User taps "Sign In"
+4. Loading spinner shows, inputs disabled
+5. AuthService calls `/auth/login` via ApiService
+6. Response parsed: `{ success: true, data: { user }, token: accessToken }`
+7. Tokens saved to SharedPreferences
+8. AuthController updates state → UI rebuilds
+9. App navigates to MainApp
 
-**SecondaryButton**: Outlined button (secondary action)
-- Props: label, onPressed, isLoading, isEnabled, width, padding
-- Features:
-  - Outlined style with border
-  - Same loading/enabled behavior as Primary
+**Validation**:
+- Empty field checks
+- Email format validation (done in AuthService)
+- Real-time error display per field
 
-**TextLinkButton**: Text-only with underline (low priority)
+**Error Handling**:
+- Network errors: "Check your internet connection"
+- Auth errors: "Invalid email or password"
+- Timeout errors: "Request took too long"
+- Generic errors displayed in red banner
+
+### 2. Sign Up Flow
+**File**: `features/auth/screens/sign_up_screen.dart`
+
+**User Journey**:
+1. User fills first name, last name, email, password, confirm password
+2. Form validates each field individually
+3. Password strength checked in real-time
+4. User taps "Create Account"
+5. Loading spinner shows
+6. AuthService calls `/auth/register` with validation
+7. Server creates user + returns tokens
+8. Tokens saved to SharedPreferences
+9. AuthController updates isAuthenticated state
+10. App navigates to MainApp
+
+**Password Strength Validation**:
+- Minimum 8 characters
+- At least 1 uppercase letter (A-Z)
+- At least 1 number (0-9)
+- Passwords must match
+
+**Terms & Conditions**:
+- Checkbox for accepting terms
+- Currently required to submit (UI check)
+- Link to terms (placeholder only)
+
+### 3. Token Persistence
+**File**: `services/storage_service.dart`
+
+**Automatic Auth Recovery**:
+```dart
+// In main.dart's _MyAppState.initState()
+void initState() {
+  super.initState();
+  _authController = AuthController();
+  _authController.init(); // Checks stored tokens
+}
+
+// In AuthController.init()
+Future<void> init() async {
+  _user = _authService.getCurrentUser(); // From SharedPreferences
+  _isAuthenticated = _authService.isAuthenticated(); // Has tokens?
+  notifyListeners();
+}
+```
+
+**Result**: Users stay logged in across app sessions
+
+### 4. State Management
+**File**: `features/auth/controllers/auth_controller.dart`
+
+**State Properties**:
+- `_user` → Current logged-in user (null if not authenticated)
+- `_isAuthenticated` → Boolean flag (has tokens)
+- `_isLoading` → Show spinner during API calls
+- `_errorMessage` → Display error banners
+
+**Methods**:
+- `init()` → Check stored auth on app start
+- `register()` → Call AuthService, update state
+- `login()` → Call AuthService, update state
+- `logout()` → Call AuthService, clear state
+- `refreshToken()` → Refresh JWT when expired
+- `clearError()` → Dismiss error message
+
+**Error Message Parsing**:
+```dart
+String _parseErrorMessage(String error) {
+  if (error.contains('Unauthorized')) {
+    return 'Invalid email or password';
+  }
+  if (error.contains('Network error')) {
+    return 'No internet connection. Check your network.';
+  }
+  if (error.contains('Request timeout')) {
+    return 'Server not responding. Try again.';
+  }
+  // ... more patterns
+}
+```
+
+### 5. App Integration
+**File**: `main.dart`
+
+**Auth Flow in Material App**:
+```dart
+// AuthController checked on app start
+home: Consumer<AuthController>(
+  builder: (context, authController, _) {
+    // Show Auth screens if not authenticated
+    if (!authController.isAuthenticated) {
+      return AuthScreen(
+        onAuthSuccess: () {
+          // Auto-rebuild when auth state changes
+        },
+      );
+    }
+    
+    // Show MainApp with bottom tab navigation
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<IdeaController>(
+          create: (_) => IdeaController(),
+        ),
+        ChangeNotifierProvider<CommunityController>(
+          create: (_) => CommunityController(),
+        ),
+      ],
+      child: const MainApp(),
+    );
+  },
+)
+```
+
+### 6. API Response Parsing
+**Fixed April 4, 2026**
+
+**Backend Response Format**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "user123",
+    "email": "user@example.com",
+    "firstName": "John",
+    "lastName": "Doe"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+**Authentication Service Parsing**:
+```dart
+factory AuthResponse.fromJson(Map<String, dynamic> json) {
+  return AuthResponse(
+    accessToken: json['token'] as String,  // ✅ Fixed
+    refreshToken: json['refreshToken'] as String? ?? '',
+    user: User.fromJson(json['data'] as Map<String, dynamic>),  // ✅ Fixed
+  );
+}
+```
+
+---
+
+## ⚠️ Partially Implemented / Needs Work
+
+### 1. API Interceptor for Token Attachment
+**Status**: ❌ **CRITICAL - Missing**
+**Impact**: Every API call outside auth must manually attach token
+
+**Current Flow** (Manual):
+```dart
+// In services, must do this for every request
+final response = await ApiService.get(
+  '/ideas',
+  token: StorageService().getAccessToken(), // Manual token attachment
+);
+```
+
+**Needed Flow** (Automatic):
+```dart
+// Should just work - interceptor attaches token
+final response = await ApiService.get('/ideas');
+// Token automatically added to header: Authorization: Bearer <token>
+```
+
+**Solution Required**:
+- Add middleware to ApiService that intercepts requests
+- Automatically attach Authorization header with access token
+- On 401 response: refresh token + retry request automatically
+- On permanent auth failure: trigger logout
+
+### 2. Automatic Token Refresh
+**Status**: ⚠️ **Manual Implementation**
+**Current**: Method exists but called manually
+**Needed**: Automatic refresh before expiration
+
+**Current Token Refresh Flow**:
+```dart
+// In AuthController - must call manually
+Future<void> refreshToken() async {
+  try {
+    await _authService.refreshToken();
+    notifyListeners();
+  } catch (e) {
+    _errorMessage = e.toString();
+    _isAuthenticated = false;
+    _user = null;
+    notifyListeners();
+  }
+}
+```
+
+**Needs Implementation**:
+- Backend should return `expiresIn` field in token response
+- Store expiration timestamp
+- Check before each API call if token expired
+- Refresh proactively (5 minutes before expiry)
+- No user-facing interruption
+
+### 3. Session Management
+**Status**: ⚠️ **Basic Implementation**
+**Current**: Logout clears everything
+**Missing**: 
+- Session timeout (auto-logout after inactivity)
+- Session duration tracking
+- Multi-device session management
+
+**Example Missing Feature**:
+```dart
+// Should have this but doesn't
+void _trackUserActivity() {
+  _lastActivityTime = DateTime.now();
+  _activityTimer = Timer.periodic(Duration(minutes: 1), (_) {
+    final inactiveMinutes = DateTime.now()
+        .difference(_lastActivityTime)
+        .inMinutes;
+    if (inactiveMinutes > 30) {
+      logout(); // Auto-logout after 30 min of inactivity
+    }
+  });
+}
+```
+
+### 4. Logout API Integration
+**Status**: ✅ **Works But No Feedback**
+**Current**: Calls `/auth/logout` but ignores response
+**Improvement Needed**: Confirm server-side session clearing
+
+---
+
+## ❌ Not Implemented
+
+### 1. Password Reset Flow
+**What's Needed**:
+- "Forgot Password?" link on Sign In screen
+- Email input screen
+- Backend endpoint: `POST /auth/forgot-password?email=...`
+- Email with reset token sent to user
+- Reset token validation screen
+- New password input screen
+- Password update confirmation
+
+**Estimated Complexity**: Medium (5 screens, 2 endpoints)
+
+### 2. Email Verification
+**What's Needed**:
+- Post-registration email verification requirement
+- "Verify Email" screen with code input
+- Resend verification email option
+- Backend endpoints: 
+  - `POST /auth/verify-email`
+  - `POST /auth/resend-verification-email`
+- User profile shows `emailVerified: boolean`
+- Restricted features until verified
+
+**Estimated Complexity**: Medium (3 screens, 2 endpoints)
+
+### 3. Two-Factor Authentication
+**What's Needed**:
+- 2FA setup screen in account settings
+- TOTP (Time-based One-Time Password) integration
+- Authenticator app list (Google Authenticator, Authy, etc.)
+- QR code display for scanning
+- Backup codes generation
+- Login screen with 2FA code input
+
+**Estimated Complexity**: High (requires 3rd party library)
+
+### 4. Social Authentication
+**What's Needed**:
+- Google Sign-In button
+- Apple Sign-In button
+- GitHub OAuth
+- Facebook Login
+- Account linking UI
+
+**Complexity**: High (requires platform-specific setup, OAuth flows)
+
+### 5. Account Management
+**What's Needed**:
+- Profile editing (name, bio, avatar upload)
+- Email/password change
+- Account deletion
+- Login history
+- Connected devices/sessions
+- Privacy settings
+
+**Estimated Complexity**: High (multiple screens and endpoints)
+
+### 6. Biometric Authentication
+**What's Needed**:
+- Local Authentication plugin (local_auth)
+- Face/fingerprint unlock on app open
+- Biometric payment confirmation
+- Settings to enable/disable biometric
+
+**Estimated Complexity**: Medium (requires platform-specific code)
+
+---
+
+## 🚨 Known Issues & Gaps
+
+### Issue #1: Missing API Interceptor
+**Severity**: 🔴 **Critical**
+**Description**: Every service must manually attach tokens
+**Impact**: Tedious, error-prone, duplicate code
+**Solution Path**: Implement HTTP middleware in ApiService
+
+### Issue #2: No Token Expiration Detection
+**Severity**: 🟡 **High**
+**Description**: Can't know when token expires
+**Impact**: Users might hit 401 errors instead of silent refresh
+**Solution Path**: Backend returns `expiresIn`, frontend tracks expiration
+
+### Issue #3: Refresh Token in SharedPreferences (Plain Text)
+**Severity**: 🟡 **High**
+**Description**: Refresh token stored unencrypted
+**Impact**: If device compromised, refresh token exposed
+**Solution Path**: Use **flutter_secure_storage** for sensitive tokens
+
+### Issue #4: No Error Code Differentiation
+**Severity**: 🟠 **Medium**
+**Description**: All errors converted to generic Exception strings
+**Impact**: Can't distinguish duplicate email from network error
+**Solution Path**: Create error enums with codes, return structured errors
+
+### Issue #5: No Role-Based Access Control Enforcement
+**Severity**: 🟠 **Medium**
+**Description**: User.role stored but not used to guard features
+**Impact**: Frontend doesn't enforce permissions (security theater)
+**Solution Path**: Create Permission enum, check before rendering features
+
+---
+
+## 📋 Todo Checklist
+
+### High Priority (Required for Production)
+- [ ] Implement API request interceptor (attach token to all requests)
+- [ ] Auto-refresh token on 401 response with request retry
+- [ ] Add error codes instead of generic exceptions
+- [ ] Use flutter_secure_storage for refresh token
+- [ ] Handle token expiration proactively
+- [ ] Add better error messages (validate server errors, show proper codes)
+
+### Medium Priority (User Experience)
+- [ ] Add password reset flow
+- [ ] Add email verification flow
+- [ ] Implement session timeout
+- [ ] Add account management screens (profile editing, logout all devices)
+- [ ] RBAC enforcement in UI
+
+### Low Priority (Nice-to-Have)
+- [ ] Biometric authentication
+- [ ] Social login (Google, Apple, GitHub)
+- [ ] Two-factor authentication
+- [ ] Login activity history
+- [ ] Dark mode theming for auth screens
+
+---
+
+## 🔧 Recently Fixed (April 4, 2026)
+
+### Fix #1: AuthResponse JSON Parsing
+**Problem**: 
+```dart
+// Was trying to access these fields which didn't exist:
+json['accessToken']  // ❌ Doesn't exist
+json['user']         // ❌ Doesn't exist
+```
+
+**Solution**:
+```dart
+// Now correctly accesses:
+json['token']        // ✅ Access token from response
+json['data']         // ✅ User data from response
+```
+
+**Impact**: Login/register now correctly parse backend responses
+
+### Fix #2: Token Refresh Response Parsing
+**Problem**:
+```dart
+final newAccessToken = response['accessToken'] // ❌ Wrong field
+```
+
+**Solution**:
+```dart
+final newAccessToken = response['token'] // ✅ Correct field
+```
+
+**Impact**: Token refresh will work when tokens expire
+
+### Fix #3: API Response Structure Alignment
+**Problem**: Services expected different response structures than backend provided
+
+**Solution**: 
+- All auth endpoints return: `{ success: true, data: {...}, token?: "..." }`
+- Updated all services to use correct structure
+- Fixed similar issues in idea_service.dart and community_service.dart
+
+**Impact**: All API calls now parse responses correctly
+
+---
+
+## 📚 Backend Reference
+
+### Auth Endpoints
+
+| Endpoint | Method | Request Body | Response |
+|----------|--------|--------------|----------|
+| `/auth/register` | POST | `{email, password, firstName, lastName, username}` | `{success, data: user, token}` |
+| `/auth/login` | POST | `{email, password}` | `{success, data: user, token}` |
+| `/auth/logout` | POST | `{}` | `{success, message}` |
+| `/auth/refresh` | POST | `{refreshToken}` | `{success, data: user, token}` |
+
+### Required Backend Improvements
+
+**For Mobile to Work Better, Backend Should Return**:
+
+1. **Token Expiration Info**:
+   ```json
+   {
+     "success": true,
+     "token": "eyJhbGciOiJIUzI1NiIs...",
+     "expiresIn": 3600,  // ← Add this (seconds)
+     "data": { ... }
+   }
+   ```
+   
+2. **Better Error Responses**:
+   ```json
+   {
+     "success": false,
+     "error": {
+       "code": "INVALID_CREDENTIALS",  // ← Add error codes
+       "message": "Email or password incorrect",
+       "details": null
+     }
+   }
+   ```
+
+3. **Refresh Token Options**:
+   - Option A: Return in response body (current)
+   - Option B: Return in HTTP-only cookie (more secure)
+   - Currently refreshToken comes from request body
+
+---
+
+## 🧪 Testing Auth Flow
+
+### Test Registration
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "newuser@example.com",
+    "password": "Password123",
+    "firstName": "John",
+    "lastName": "Doe",
+    "username": "johndoe"
+  }'
+```
+
+### Test Login
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "Password123"
+  }'
+```
+
+### Test Protected Endpoint with Token
+```bash
+curl -X GET http://localhost:3000/api/ideas \
+  -H "Authorization: Bearer <access_token_here>"
+```
+
+---
+
+## 🎯 Next Implementation Steps
+
+### Immediate (This Week)
+1. **API Interceptor** - Add automatic token attachment
+   - Create middleware in ApiService
+   - Test with all existing API calls
+   - Ensure backward compatibility
+
+2. **Token Refresh on 401** - Implement retry logic
+   - Catch 401 responses
+   - Call refreshToken() automatically
+   - Retry original request
+   - If refresh fails, logout user
+
+### Short Term (Next Week)
+3. **Session Timeout** - Auto-logout on inactivity
+   - Track user activity (taps, API calls)
+   - Logout after 30 minutes of inactivity
+   - Show warning before timeout
+
+4. **Better Error Messages** - Differentiate error types
+   - Create ErrorType enum (network, auth, validation, server)
+   - Parse backend error codes
+   - Show appropriate messages
+
+### Medium Term (Next 2 Weeks)  
+5. **Password Reset** - Complete flow
+   - Add forgot password screen
+   - Implement reset token validation
+   - Add new password input
+   - Update backend integration
+
+6. **Email Verification** - Verify user emails
+   - Add verification code input screen
+   - Resend code option
+   - Block certain features until verified
+
+---
+
+## 📱 Development Notes
+
+### Running the App
+```bash
+cd mobile_app
+flutter pub get
+flutter run -d emulator-5554  # or your device ID
+```
+
+### Common Issues
+
+**Issue**: Login fails with "type 'Null' error"
+- **Cause**: API response structure mismatch
+- **Fix**: Check response format in ApiService._handleResponse()
+- **Status**: ✅ Fixed on April 4
+
+**Issue**: Token not attached to API requests
+- **Cause**: No interceptor in ApiService
+- **Workaround**: Manually pass token to each request
+- **Fix**: Implement interceptor (in progress)
+
+**Issue**: App logs out unexpectedly
+- **Cause**: Token expired, no refresh mechanism
+- **Workaround**: User must log in again
+- **Fix**: Implement auto-refresh on 401 (planned)
+
+---
+
+## 📖 Architecture Decision Log
+
+| Date | Decision | Rationale |
+|------|----------|-----------|
+| Apr 4 | Use ChangeNotifier for state | Simple, no extra dependencies |
+| Apr 4 | Store tokens in SharedPreferences | Standard approach, sufficient for MVP |
+| Apr 4 | Manual token attachment | Quick MVP, interceptor can be added later |
+| Planned | Switch to flutter_secure_storage | Better security for tokens |
+| Planned | Add bloc/riverpod | If state grows more complex |
+
+---
+
+## 🔒 Security Checklist
+
+- [ ] HTTPS enforced in production (check baseUrl)
+- [ ] Tokens not logged or printed in debug logs
+- [ ] Sensitive data cleared on logout
+- [ ] Refresh token in secure storage (not plain SharedPreferences)
+- [ ] Token expiration enforced
+- [ ] Password requirements enforced (min 8 chars, complexity)
+- [ ] Rate limiting on auth endpoints (backend)
+- [ ] CSRF protection (if using cookies)
+- [ ] Input validation before sending to API
+- [ ] No hardcoded credentials in code
 - Props: label, onPressed, isEnabled
 - Features:
   - No background, no border

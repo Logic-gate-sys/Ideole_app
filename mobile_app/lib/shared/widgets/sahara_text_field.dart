@@ -17,7 +17,7 @@ class SaharaTextField extends StatefulWidget {
   final String? errorText;
 
   const SaharaTextField({
-    Key? key,
+    super.key,
     required this.label,
     this.hint,
     this.controller,
@@ -29,7 +29,7 @@ class SaharaTextField extends StatefulWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.errorText,
-  }) : super(key: key);
+  });
 
   @override
   State<SaharaTextField> createState() => _SaharaTextFieldState();
@@ -156,13 +156,13 @@ class SaharaPasswordField extends StatefulWidget {
   final String? errorText;
 
   const SaharaPasswordField({
-    Key? key,
+    super.key,
     required this.label,
     this.hint = 'Enter your password',
     this.controller,
     this.onChanged,
     this.errorText,
-  }) : super(key: key);
+  });
 
   @override
   State<SaharaPasswordField> createState() => _SaharaPasswordFieldState();

@@ -12,10 +12,10 @@ class IdeaDetailScreen extends StatefulWidget {
   final Idea? cachedIdea; // Pass idea from list to avoid duplicate fetch
 
   const IdeaDetailScreen({
-    Key? key,
+    super.key,
     required this.ideaId,
     this.cachedIdea,
-  }) : super(key: key);
+  });
 
   @override
   State<IdeaDetailScreen> createState() => _IdeaDetailScreenState();
@@ -265,7 +265,7 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
                 // Comments list
                 ...controller.comments
                     .map((comment) => _buildComment(comment))
-                    .toList(),
+                    ,
 
                 if (controller.comments.isEmpty)
                   Center(
