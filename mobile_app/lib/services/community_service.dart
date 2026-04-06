@@ -7,29 +7,30 @@ class CommunityService {
   static const int pageSize = 10; // Items per page
 
   /// Get communities in an organisation
-  /// For MVP without org management, this may return limited results
+  /// For MVP: requires organisationId to be specified
   Future<List<Community>> getCommunities({
     String? organizationId,
     int limit = pageSize,
     int offset = 0,
   }) async {
     try {
+      if (organizationId == null) {
+        return []; // Return empty list if no organisation specified
+      }
+
       final token = StorageService().getAccessToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
 
       final queryParams = {
         'limit': limit.toString(),
         'offset': offset.toString(),
       };
 
-      // If org ID provided, use org-specific endpoint
-      // Otherwise try generic communities list
-      final endpoint = organizationId != null
-          ? '/organisations/$organizationId/communities'
-          : '/communities'; // Assuming generic endpoint exists
-
       final response = await ApiService.get(
-        endpoint,
-        token: token,
+        '/organisations/$organizationId/communities',
+        token: token!,
         queryParams: queryParams,
       );
 
@@ -49,10 +50,13 @@ class CommunityService {
   Future<Community> getCommunity(String communityId) async {
     try {
       final token = StorageService().getAccessToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
 
       final response = await ApiService.get(
         '/communities/$communityId',
-        token: token,
+        token: token!,
       );
 
       // Response format: { success: true, data: {...} }
@@ -74,7 +78,7 @@ class CommunityService {
       await ApiService.post(
         '/communities/$communityId/memberships/request',
         body: {},
-        token: token,
+        token: token!,
       );
 
       return true;
@@ -111,12 +115,39 @@ class CommunityService {
 
       await ApiService.delete(
         '/communities/$communityId/memberships/$membershipId',
-        token: token,
+        token: token!,
       );
 
       return true;
     } catch (e) {
       throw Exception('Failed to leave community: $e');
+    }
+  }
+
+  /// Create a new community in an organisation
+  Future<Community> createCommunity({
+    required String name,
+    String? description,
+    required String organisationId,
+  }) async {
+    try {
+      final token = StorageService().getAccessToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final response = await ApiService.post(
+        '/organisations/$organisationId/communities',
+        body: {
+          'name': name,
+          'description': description,
+        },
+        token: token!,
+      );
+
+      return Community.fromJson(response['data'] as Map<String, dynamic>);
+    } catch (e) {
+      throw Exception('Failed to create community: $e');
     }
   }
 }

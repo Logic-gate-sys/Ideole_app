@@ -136,19 +136,30 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Communities will appear here soon',
-              style: SaharaTypography.bodyMedium.copyWith(
-                color: SaharaColors.onSurfaceVariant,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Communities are organized within organisations. Create an organisation to get started!',
+                textAlign: TextAlign.center,
+                style: SaharaTypography.bodyMedium.copyWith(
+                  color: SaharaColors.onSurfaceVariant,
+                ),
               ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                context.read<CommunityController>().loadCommunities();
+                // Navigate to organisations tab
+                // The user should create an org there
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Go to Organisations tab to create one'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
               },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh'),
+              icon: const Icon(Icons.business),
+              label: const Text('Create Organisation'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: SaharaColors.primary,
                 foregroundColor: SaharaColors.onPrimary,

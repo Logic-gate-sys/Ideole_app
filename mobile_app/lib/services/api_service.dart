@@ -1,15 +1,22 @@
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 
 /// API Service - Centralized HTTP client
 class ApiService {
-  // Backend base URL - update for your environment
-  // For Android Emulator: http://10.0.2.2:3000/api
-  // For iOS Simulator: http://localhost:3000/api
-  // For real device: http://<your-ip>:3000/api
-  static const String baseUrl = 'http://10.0.2.2:3000/api';
+
+
+  static String get baseUrl {
+    if (kIsWeb) {
+      //web
+      return 'http://localhost:3000/api';
+    } else {
+      //emulator
+      return 'http://10.0.2.2:3000/api';
+    }
+  }
   
   static const Duration timeout = Duration(seconds: 30);
 

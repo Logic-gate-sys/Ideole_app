@@ -5,6 +5,7 @@ import { setupCommunityRoutes } from './community.route.ts';
 import { setupUserRoutes } from './user.route.ts';
 import { setupMembershipRoutes } from './membership.route.ts';
 import { setupIdeaRoutes } from './idea.route.ts';
+import { setupReviewerRoutes } from './reviewer.route.ts';
 
 const router = Router();
 
@@ -15,5 +16,6 @@ setupCommunityRoutes(router);
 setupUserRoutes(router);
 setupMembershipRoutes(router);
 setupIdeaRoutes(router);
+setupReviewerRoutes(router);
 
 export default router;

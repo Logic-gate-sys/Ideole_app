@@ -8,6 +8,11 @@ import 'features/feed/controllers/idea_controller.dart';
 import 'features/feed/screens/idea_feed_screen.dart';
 import 'features/communities/controllers/community_controller.dart';
 import 'features/communities/screens/communities_screen.dart';
+import 'features/organisations/controllers/organisation_controller.dart';
+import 'features/organisations/screens/organisations_screen.dart';
+import 'features/idea/controllers/create_idea_controller.dart';
+import 'features/idea/controllers/idea_detail_controller.dart';
+import 'features/shared_modal_widgets/manage_reviewers_controller.dart';
 
 void main() async {
   // Initialize app
@@ -67,11 +72,27 @@ class _MyAppState extends State<MyApp> {
             // Show MainApp (bottom tab navigation) when authenticated
             return MultiProvider(
               providers: [
+                // Feed and Ideas
                 ChangeNotifierProvider<IdeaController>(
                   create: (_) => IdeaController(),
                 ),
+                ChangeNotifierProvider<CreateIdeaController>(
+                  create: (_) => CreateIdeaController(),
+                ),
+                ChangeNotifierProvider<IdeaDetailController>(
+                  create: (_) => IdeaDetailController(),
+                ),
+                // Communities
                 ChangeNotifierProvider<CommunityController>(
                   create: (_) => CommunityController(),
+                ),
+                // Organisations
+                ChangeNotifierProvider<OrganisationController>(
+                  create: (_) => OrganisationController(),
+                ),
+                // Modals
+                ChangeNotifierProvider<ManageReviewersController>(
+                  create: (_) => ManageReviewersController(),
                 ),
               ],
               child: const MainApp(),
@@ -118,6 +139,10 @@ class _MainAppState extends State<MainApp> {
             label: 'Communities',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.business),
+            label: 'Organisations',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
@@ -138,8 +163,10 @@ class _MainAppState extends State<MainApp> {
       case 1:
         return const CommunitiesScreen();
       case 2:
-        return _buildPlaceholder('Profile');
+        return const OrganisationsScreen();
       case 3:
+        return _buildPlaceholder('Profile');
+      case 4:
         return _buildPlaceholder('Settings');
       default:
         return _buildPlaceholder('Unknown');

@@ -219,39 +219,137 @@ This organization has been reorganized into SECTION A (Fully Implemented) and SE
 
 ---
 
-## Implementation Status (April 4, 2026)
+## Implementation Status (April 6, 2026)
 
-### SECTION A: ✅ FULLY IMPLEMENTED (7 Features)
+### 📊 OVERALL PROGRESS
 
-1. **Authentication** - register, login, refresh, logout
-2. **User Management** - profile, update profile, track active timestamps  
-3. **Organisation Management** - create, read, update, delete organisations
-4. **Community Management** - create, read, update, delete communities
-5. **Membership Management** - request, approve, reject, remove memberships
-6. **Idea Management** - create, read, update, delete ideas with visibility control
-7. **Evaluation Criteria** - create, read, update, delete custom evaluation criteria
+**Backend**: 7/12 features complete (58%) | **Frontend**: 4/9 features complete (44%)
 
-**Key Features Implemented**:
+---
 
-- `optionalAuth` Middleware: Allows public access to GET endpoints with authenticated fallback
-- Idea Visibility: PUBLIC (everyone), PROTECTED (community members), PRIVATE (owner only)
-- RBAC: Role-based access control with ownership checks via `authorise()` middleware
-- Zod Validation: All POST/PUT endpoints validated via Zod schemas
+### ✅ SECTION A: FULLY IMPLEMENTED (7 Backend Features)
 
-### SECTION B: ❌ NOT YET IMPLEMENTED (5 Features)
+| # | Feature | Routes | Status | Frontend | Notes |
+|---|---------|--------|--------|----------|-------|
+| 1 | **Authentication** | 4 | ✅ Complete | ✅ Sign In/Up | Email/password, JWT tokens, refresh flow |
+| 2 | **User Management** | 6 | ✅ Complete | ❌ Partial | Profile fetching works, edit profile UI needed |
+| 3 | **Organisation Mgmt** | 5 | ✅ Complete | ✅ Create, List, Detail | Full CRUD with ownership checks |
+| 4 | **Community Mgmt** | 5 | ✅ Complete | ✅ Create, List, Detail | Full CRUD with ownership checks |
+| 5 | **Membership Mgmt** | 6 | ✅ Complete | ❌ Skeleton | Join/request flows API ready |
+| 6 | **Idea Mgmt** | 5 | ✅ Complete | ✅ Create, List, Detail | CRUD + visibility control |
+| 7 | **Evaluation Criteria** | 4 | ✅ Complete | ⚠️ Basic | Criteria display, editing not implemented |
 
-1. **Rating System** - submit scores, calculate averages, get stats
-2. **Comments** - post, read, update, delete critiques/discussions
-3. **Invitations** - invite reviewers, accept, decline invites
-4. **Conversations & Messaging** - DIRECT/IDEA/COMMUNITY contexts, send/receive messages
-5. **Cron Jobs** - dormancy checks, community dissolution, auto-stage promotion
+**Key Backend Features**:
+- ✅ `optionalAuth` middleware for public/authenticated fallback
+- ✅ Idea visibility tiers: PUBLIC → PROTECTED → PRIVATE
+- ✅ RBAC with ownership checks via `authorise()` middleware
+- ✅ Zod input validation on all POST/PUT endpoints
+- ✅ JWT + refresh token architecture
+- ✅ PostgreSQL/Prisma ORM integration
+
+**Frontend Services Ready** ✅:
+- `ApiService` (HTTP client with auto platform detection: localhost for web, 10.0.2.2 for emulator)
+- `AuthService` (login, register, logout, token refresh)
+- `IdeaService` (CRUD, fetch ideas, get by ID)
+- `CommunityService` (CRUD, list communities)
+- `OrganisationService` (CRUD, list organisations)
+- `StorageService` (JWT token/user persistence via SharedPreferences)
+
+---
+
+### ❌ SECTION B: NOT YET IMPLEMENTED (5 Backend Features)
+
+| # | Feature | Routes | Complexity | Impact | Frontend |
+|---|---------|--------|-----------|--------|----------|
+| 8 | **Rating System** | 5 | Medium | HIGH | Enables idea evaluation & ranking |
+| 9 | **Comments** | 4 | Medium | HIGH | Enables idea discussion & feedback |
+| 10 | **Invitations** | 5 | Medium | MEDIUM | Enables reviewer assignment |
+| 11 | **Messaging** | 6 | Hard | MEDIUM | Enables async communication |
+| 12 | **Cron Jobs** | 3 | Hard | LOW | Enables auto-promotion & cleanup |
 
 **What's Needed**:
+- Database models for ratings, comments, invitations, messages (Prisma)
+- Controllers & services for each feature
+- Input validation schemas (Zod)
+- RBAC for partial updates (authors can edit their comments, etc.)
+- WebSocket setup for real-time messaging (optional)
 
-- Routes, controllers, services for rating calculation & stage progression
-- Routes, controllers, services for comment CRUD
-- Routes, controllers, services for invitation system
-- Routes, controllers, services for messaging system
-- Background job handlers for scheduled tasks
+---
+
+### 🎨 FRONTEND IMPLEMENTATION STATUS
+
+#### ✅ FULLY IMPLEMENTED SCREENS
+
+| Screen | Location | Status | Features |
+|--------|----------|--------|----------|
+| **Sign In** | `auth/screens/sign_in_screen.dart` | ✅ Complete | Email/password login, error handling, forgot password link |
+| **Sign Up** | `auth/screens/signup_screen.dart` | ✅ Complete | Full registration form with password strength validation |
+| **Idea Feed** | `feed/screens/idea_feed_screen.dart` | ✅ Complete | Paginated idea list, pull-to-refresh, create button |
+| **Create Idea** | `idea/screens/create_idea_screen.dart` | ✅ Complete | Title/description form, visibility toggle, error handling |
+| **Idea Detail** | `idea/screens/idea_detail_screen.dart` | ✅ Complete | Full idea view, evaluation criteria display |
+| **Communities List** | `communities/screens/communities_screen.dart` | ✅ Complete | Browse all communities, search/filter |
+| **Community Detail** | `communities/screens/community_detail_screen.dart` | ✅ Complete | Community info, stats, member/idea lists |
+
+#### ❌ NOT IMPLEMENTED SCREENS
+
+| Screen | Location | Status | Why Needed |
+|--------|----------|--------|-----------|
+| **Profile Dashboard** | `profile/screens/profile_screen.dart` | ❌ Not Started | Show user info, ideas, communities, stats |
+| **Edit Profile** | `profile/screens/edit_profile_modal.dart` | ❌ Not Started | Allow users to update name, bio, avatar |
+| **Settings** | `profile/screens/settings_screen.dart` | ❌ Not Started | Logout, preferences, app settings |
+| **Idea Rating Modal** | `idea/screens/rate_idea_modal.dart` | ❌ Not Started | Score ideas (requires backend rating system) |
+| **Comments Section** | `idea/screens/comments_section.dart` | ❌ Not Started | Post/view comments on ideas |
+| **Invite Reviewers** | `idea/screens/invite_reviewers_modal.dart` | ❌ Not Started | Assign reviewers to ideas |
+| **Messages/Inbox** | `messages/screens/messages_screen.dart` | ❌ Not Started | View conversations & messages |
+
+#### ✅ IMPLEMENTED CONTROLLERS
+
+| Controller | Location | Status | Handles |
+|------------|----------|--------|---------|
+| AuthController | `auth/controllers/` | ✅ Complete | Login, register, logout, user state |
+| IdeaController | `feed/controllers/` | ✅ Complete | Fetch ideas, pagination, refresh |
+| CreateIdeaController | `idea/controllers/` | ✅ Complete | Form validation, idea creation |
+| CommunityController | `communities/controllers/` | ✅ Complete | Fetch communities, list, detail |
+| OrganisationController | `organisations/controllers/` | ✅ Complete | Fetch organisations, list, detail |
+
+#### ❌ NOT IMPLEMENTED CONTROLLERS
+
+| Controller | Purpose |
+|------------|---------|
+| RatingController | Manage idea ratings submission & display |
+| CommentController | Manage comment CRUD |
+| InvitationController | Manage reviewer invitations |
+| MessagingController | Manage conversations & messages |
+| UserController | Manage profile updates, user data |
+
+---
+
+### 🎯 RECOMMENDED NEXT STEPS
+
+#### Phase 1: Profile & Settings (2-3 days)
+- [ ] Implement ProfileController
+- [ ] Build Profile Dashboard screen (display user, ideas, communities)
+- [ ] Build Edit Profile modal/screen
+- [ ] Build Settings screen with logout
+- **Impact**: Complete 4 core UI screens, improve UX
+
+#### Phase 2: Rating System (3-4 days)
+- [ ] Add `IdeaRating` model to Prisma schema
+- [ ] Implement rating routes/controller/service in backend
+- [ ] Build RatingController in frontend
+- [ ] Create Rate Idea modal UI
+- **Impact**: Enable idea quality feedback
+
+#### Phase 3: Comments (3-4 days)
+- [ ] Add `IdeaComment` model to Prisma schema
+- [ ] Implement comment routes/controller/service
+- [ ] Build CommentController in frontend
+- [ ] Create comments section on Idea Detail screen
+- **Impact**: Enable collaborative discussion
+
+#### Backlog (Lower Priority)
+- Invitations system (medium complexity)
+- Messaging system (high complexity, uses WebSocket)
+- Cron jobs (infrastructure complexity)
 
 ---
