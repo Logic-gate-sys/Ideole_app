@@ -19,7 +19,8 @@ class Comment {
   factory Comment.fromJson(Map<String, dynamic> json) {
     // Handle nested user object or direct fields
     final user = json['user'] as Map<String, dynamic>?;
-    final userName = user?['name'] ?? json['userName'] ?? 'Anonymous';
+    final userName =
+        user?['name'] ?? user?['username'] ?? json['userName'] ?? 'Anonymous';
     
     return Comment(
       id: json['id'] ?? '',

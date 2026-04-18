@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/services/token_storage.dart';
 import 'core/widgets/index.dart';
-import 'features/auth/services/auth_service.dart';
+import 'features/auth/controllers/auth_controller.dart';
 import 'features/ideas/controllers/idea_controller.dart';
+import 'features/comments/controllers/comment_controller.dart';
 import 'features/ratings/controllers/rating_controller.dart';
 import 'features/invites/controllers/invite_controller.dart';
-import 'features/comments/controllers/comment_controller.dart';
+import 'features/organisations/controllers/organisation_controller.dart';
+import 'features/communities/controllers/community_controller.dart';
+import 'features/communities/controllers/membership_controller.dart';
 import 'screens/app_shell.dart';
 
 void main() async {
@@ -27,12 +30,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Services
-        Provider<AuthService>(create: (_) => AuthService()),
-
         // Controllers
+        ChangeNotifierProvider<AuthController>(
+          create: (_) => AuthController(),
+        ),
         ChangeNotifierProvider<IdeaController>(
           create: (_) => IdeaController(),
+        ),
+        ChangeNotifierProvider<CommentController>(
+          create: (_) => CommentController(),
         ),
         ChangeNotifierProvider<RatingController>(
           create: (_) => RatingController(),
@@ -40,8 +46,14 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<InviteController>(
           create: (_) => InviteController(),
         ),
-        ChangeNotifierProvider<CommentController>(
-          create: (_) => CommentController(),
+        ChangeNotifierProvider<OrganisationController>(
+          create: (_) => OrganisationController(),
+        ),
+        ChangeNotifierProvider<CommunityController>(
+          create: (_) => CommunityController(),
+        ),
+        ChangeNotifierProvider<MembershipController>(
+          create: (_) => MembershipController(),
         ),
       ],
       child: MaterialApp(

@@ -100,7 +100,7 @@ class _AppChipState extends State<AppChip> {
             boxShadow: widget.variant == AppChipVariant.elevated
                 ? [
                     BoxShadow(
-                      color: AppColors.outline.withOpacity(0.12),
+                      color: AppColors.outline.withValues(alpha: 0.12),
                       blurRadius: 2,
                       offset: const Offset(0, 1),
                     )

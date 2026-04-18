@@ -5,7 +5,6 @@ import '../../../core/theme/index.dart';
 import '../../../core/widgets/index.dart';
 import '../controllers/auth_controller.dart';
 import '../utils/validators.dart';
-import 'otp_verification_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -17,7 +16,9 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -38,7 +39,9 @@ class _SignUpScreenState extends State<SignUpScreen>
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -69,28 +72,15 @@ class _SignUpScreenState extends State<SignUpScreen>
 
     try {
       final user = await authController.signup(
-        _nameController.text.trim(),
-        _emailController.text.trim(),
-        _passwordController.text,
+        username: _usernameController.text.trim(),
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
       );
 
       if (mounted && user != null) {
-        // Navigate to OTP verification
-        if (mounted) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => OtpVerificationScreen(
-                email: _emailController.text,
-                purpose: 'signup_verification',
-                onVerificationSuccess: () {
-                  if (mounted) {
-                    Navigator.of(context).pushReplacementNamed('/');
-                  }
-                },
-              ),
-            ),
-          );
-        }
+        FocusScope.of(context).unfocus();
       }
     } catch (e) {
       if (mounted) {
@@ -209,13 +199,33 @@ class _SignUpScreenState extends State<SignUpScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Full Name
+          // First Name
           AppInput(
-            label: 'Full Name',
-            hint: 'Enter your full name',
-            controller: _nameController,
+            label: 'First Name',
+            hint: 'Enter your first name',
+            controller: _firstNameController,
             keyboardType: TextInputType.name,
             validator: AuthValidators.validateName,
+          ),
+          SizedBox(height: AppSpacing.lg),
+
+          // Last Name
+          AppInput(
+            label: 'Last Name',
+            hint: 'Enter your last name',
+            controller: _lastNameController,
+            keyboardType: TextInputType.name,
+            validator: AuthValidators.validateName,
+          ),
+          SizedBox(height: AppSpacing.lg),
+
+          // Username
+          AppInput(
+            label: 'Username',
+            hint: 'Choose a unique username',
+            controller: _usernameController,
+            keyboardType: TextInputType.text,
+            validator: AuthValidators.validateUsername,
           ),
           SizedBox(height: AppSpacing.lg),
 

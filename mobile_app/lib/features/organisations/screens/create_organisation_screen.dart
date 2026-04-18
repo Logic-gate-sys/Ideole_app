@@ -315,11 +315,11 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen>
                         ),
                       ),
                       backgroundColor: isSelected
-                          ? AppColors.primary.withOpacity(0.1)
+                          ? AppColors.primary.withValues(alpha: 0.1)
                           : AppColors.surface,
                       side: BorderSide(
                         color: isSelected
-                            ? AppColors.primary.withOpacity(0.3)
+                            ? AppColors.primary.withValues(alpha: 0.3)
                             : AppColors.outlineVariant,
                       ),
                     ),

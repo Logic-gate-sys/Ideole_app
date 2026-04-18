@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/widgets/index.dart';
 import '../controllers/idea_controller.dart';
+import '../models/idea.dart';
 import 'idea_detail_screen.dart';
 
 class IdeasListScreen extends StatefulWidget {
@@ -147,7 +148,7 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      idea.problemText,
+                      idea.shortDescription,
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -158,9 +159,19 @@ class _IdeasListScreenState extends State<IdeasListScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'By ${idea.authorName}',
-                          style: AppTextStyles.labelSmall,
+                        Wrap(
+                          spacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              'By ${idea.authorName}',
+                              style: AppTextStyles.labelSmall,
+                            ),
+                            AppBadge(
+                              label: visibilityToString(idea.visibility),
+                              variant: AppBadgeVariant.outlined,
+                            ),
+                          ],
                         ),
                         Icon(
                           Icons.arrow_forward,

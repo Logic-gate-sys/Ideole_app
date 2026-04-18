@@ -5,7 +5,6 @@ import '../../../core/theme/index.dart';
 import '../../../core/widgets/index.dart';
 import '../controllers/auth_controller.dart';
 import '../utils/validators.dart';
-import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -22,7 +21,6 @@ class _SignInScreenState extends State<SignInScreen>
   final _passwordController = TextEditingController();
   late AnimationController _animationController;
   bool _showPassword = false;
-  bool _rememberMe = false;
 
   @override
   void initState() {
@@ -56,7 +54,7 @@ class _SignInScreenState extends State<SignInScreen>
       );
 
       if (mounted && user != null) {
-        Navigator.of(context).pushReplacementNamed('/');
+        FocusScope.of(context).unfocus();
       }
     } catch (e) {
       // Error is handled by controller
@@ -76,14 +74,6 @@ class _SignInScreenState extends State<SignInScreen>
         );
       }
     }
-  }
-
-  void _handleForgotPassword() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const ForgotPasswordScreen(),
-      ),
-    );
   }
 
   void _handleSignUpNavigation() {
@@ -115,22 +105,6 @@ class _SignInScreenState extends State<SignInScreen>
 
                   // Form
                   _buildForm(authController),
-                  SizedBox(height: AppSpacing.lg),
-
-                  // Forgot Password Link
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: _handleForgotPassword,
-                      child: Text(
-                        'Forgot password?',
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: AppColors.primary,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ),
                   SizedBox(height: AppSpacing.xxxl),
 
                   // Sign In Button
@@ -143,14 +117,6 @@ class _SignInScreenState extends State<SignInScreen>
                     onPressed:
                         authController.isLoading ? null : _handleSignIn,
                   ),
-                  SizedBox(height: AppSpacing.xl),
-
-                  // Divider with text
-                  _buildDivider(),
-                  SizedBox(height: AppSpacing.xl),
-
-                  // Social Login Buttons
-                  _buildSocialButtons(),
                   SizedBox(height: AppSpacing.xxxl),
 
                   // Sign Up Link
@@ -211,7 +177,7 @@ class _SignInScreenState extends State<SignInScreen>
                 color: AppColors.errorContainer,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                  color: AppColors.error.withOpacity(0.3),
+                  color: AppColors.error.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -273,115 +239,8 @@ class _SignInScreenState extends State<SignInScreen>
             ),
           ),
           SizedBox(height: AppSpacing.md),
-
-          // Remember me checkbox
-          Row(
-            children: [
-              SizedBox(
-                width: 18,
-                height: 18,
-                child: Checkbox(
-                  value: _rememberMe,
-                  onChanged: (value) {
-                    setState(() {
-                      _rememberMe = value ?? false;
-                    });
-                  },
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.xs),
-                  ),
-                ),
-              ),
-              SizedBox(width: AppSpacing.sm),
-              Text(
-                'Remember me',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.onSurface,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Row(
-      children: [
-        Expanded(
-          child: Divider(
-            color: AppColors.outlineVariant,
-            height: 1,
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Text(
-            'or',
-            style: AppTextStyles.labelMedium.copyWith(
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Divider(
-            color: AppColors.outlineVariant,
-            height: 1,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSocialButtons() {
-    return Column(
-      children: [
-        // Google
-        AppButton(
-          label: 'Continue with Google',
-          variant: AppButtonVariant.outlined,
-          size: AppButtonSize.large,
-          isFullWidth: true,
-          icon: Icons.g_mobiledata,
-          onPressed: () {
-            // Handle Google sign in
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Google Sign-In coming soon',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.onSecondary),
-                ),
-                backgroundColor: AppColors.secondary,
-              ),
-            );
-          },
-        ),
-        SizedBox(height: AppSpacing.md),
-
-        // Apple
-        AppButton(
-          label: 'Continue with Apple',
-          variant: AppButtonVariant.outlined,
-          size: AppButtonSize.large,
-          isFullWidth: true,
-          icon: Icons.apple,
-          onPressed: () {
-            // Handle Apple sign in
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Apple Sign-In coming soon',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.onSecondary),
-                ),
-                backgroundColor: AppColors.secondary,
-              ),
-            );
-          },
-        ),
-      ],
     );
   }
 

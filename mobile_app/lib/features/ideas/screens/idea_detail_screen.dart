@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/widgets/index.dart';
-import '../controllers/idea_controller.dart';
-import '../models/idea.dart';
-import '../../ratings/controllers/rating_controller.dart';
+import '../../auth/controllers/auth_controller.dart';
 import '../../comments/controllers/comment_controller.dart';
 import '../../comments/screens/comments_section.dart';
+import '../../conversations/screens/idea_conversation_screen.dart';
+import '../../ratings/controllers/rating_controller.dart';
+import '../../ratings/models/rating.dart';
+import '../controllers/idea_controller.dart';
+import '../models/idea.dart';
 
 class IdeaDetailScreen extends StatefulWidget {
   final String ideaId;
@@ -20,17 +23,22 @@ class IdeaDetailScreen extends StatefulWidget {
 }
 
 class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
+  double _originalityScore = 7;
+  double _feasibilityScore = 7;
+  double _impactScore = 7;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Load idea details
-      context.read<IdeaController>().loadIdeaDetails(widget.ideaId);
-
-      // Load ratings and comments
-      context.read<RatingController>().loadIdeaRatingData(widget.ideaId);
-      context.read<CommentController>().loadComments(widget.ideaId);
+      _loadAllSections();
     });
+  }
+
+  void _loadAllSections() {
+    context.read<IdeaController>().loadIdeaDetails(widget.ideaId);
+    context.read<RatingController>().loadIdeaRatingData(widget.ideaId);
+    context.read<CommentController>().loadComments(widget.ideaId);
   }
 
   @override
@@ -50,21 +58,13 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share_outlined),
-            onPressed: () {
-              // Handle share
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              // Handle more options
-            },
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadAllSections,
           ),
         ],
       ),
-      body: Consumer<IdeaController>(
-        builder: (context, ideaController, _) {
+      body: Consumer2<IdeaController, AuthController>(
+        builder: (context, ideaController, authController, _) {
           if (ideaController.isLoading && ideaController.selectedIdea == null) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -76,182 +76,427 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
           final idea = ideaController.selectedIdea;
           if (idea == null) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.lightbulb_outline,
-                    size: 64,
-                    color: AppColors.outline,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Idea not found',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+              child: Text(
+                'Idea not found',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
               ),
             );
           }
 
-          return _buildDetailView(context, idea);
+          final currentUserId = authController.currentUser?.id;
+          final canManage = idea.isOwnedBy(currentUserId);
+          return _buildDetailView(
+            context,
+            ideaController,
+            idea,
+            canManage,
+            currentUserId,
+          );
         },
       ),
     );
   }
 
-  Widget _buildDetailView(BuildContext context, Idea idea) {
+  Widget _buildDetailView(
+    BuildContext context,
+    IdeaController controller,
+    Idea idea,
+    bool canManage,
+    String? currentUserId,
+  ) {
+    final canManageCriteria = canManage && idea.stage == IdeaStage.inception;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
         horizontal: 16,
-        vertical: 24,
+        vertical: 20,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category & Visibility badges
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               AppBadge(
-                label: idea.category,
+                label: idea.visibilityLabel,
+                variant: AppBadgeVariant.outlined,
+              ),
+              AppBadge(
+                label: idea.stageLabel,
                 variant: AppBadgeVariant.tonal,
               ),
-              const SizedBox(width: 8),
               AppBadge(
-                label: idea.visibility == IdeaVisibility.public
-                    ? 'Public'
-                    : 'Private',
-                variant: AppBadgeVariant.outlined,
-                prefix: Icon(
-                  idea.visibility == IdeaVisibility.public
-                      ? Icons.public
-                      : Icons.lock_outline,
-                  size: 12,
-                ),
+                label: '${idea.ratingCount} Ratings',
+                variant: AppBadgeVariant.filled,
               ),
-              const Spacer(),
-              Text(
-                _formatDate(idea.createdAt),
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
+              AppBadge(
+                label: '${idea.commentCount} Comments',
+                variant: AppBadgeVariant.filled,
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // Title
           Text(
             idea.title,
             style: AppTextStyles.headlineLarge.copyWith(
-              fontSize: 32,
+              fontSize: 30,
               height: 1.2,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
-          // Author info
-          _buildAuthorInfo(idea),
-          const SizedBox(height: 32),
-
-          // Problem section
-          _buildSection(
-            context,
-            title: 'Problem',
-            content: idea.problemText,
-            icon: Icons.warning_outlined,
-            accentColor: AppColors.warning,
+          Row(
+            children: [
+              AppAvatar(
+                initials: idea.authorName.isNotEmpty
+                    ? idea.authorName[0].toUpperCase()
+                    : '?',
+                size: 40,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      idea.authorName,
+                      style: AppTextStyles.labelLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Posted ${_formatDate(idea.createdAt)}',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+
+          if (canManage) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: AppButton(
+                    label: 'Edit Idea',
+                    size: AppButtonSize.small,
+                    variant: AppButtonVariant.outlined,
+                    icon: Icons.edit_outlined,
+                    onPressed: () => _showEditIdeaSheet(idea),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: AppButton(
+                    label: 'Delete',
+                    size: AppButtonSize.small,
+                    variant: AppButtonVariant.outlined,
+                    icon: Icons.delete_outline,
+                    onPressed: () => _handleDeleteIdea(idea.id),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 12),
+
+          AppButton(
+            label: 'Open Conversation',
+            variant: AppButtonVariant.outlined,
+            size: AppButtonSize.small,
+            icon: Icons.forum_outlined,
+            onPressed: () => _openConversation(idea),
+          ),
+
           const SizedBox(height: 24),
 
-          // Solution section
           _buildSection(
-            context,
-            title: 'Solution',
-            content: idea.solutionText,
-            icon: Icons.lightbulb_outlined,
-            accentColor: AppColors.primary,
+            title: 'Description',
+            content: idea.description,
+            icon: Icons.description_outlined,
+            color: AppColors.primary,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
 
-          // Evaluation section
-          _buildEvaluationSection(context, idea.id),
-          const SizedBox(height: 32),
+          if (idea.belongsToCommunity || idea.belongsToOrganisation)
+            _buildContextSection(idea),
 
-          // Discussion section
-          _buildDiscussionSection(context, idea.id),
+          if (idea.belongsToCommunity || idea.belongsToOrganisation)
+            const SizedBox(height: 20),
+
+          _buildCriteriaSection(
+            controller: controller,
+            idea: idea,
+            canManageCriteria: canManageCriteria,
+            canManage: canManage,
+          ),
+
           const SizedBox(height: 24),
+
+          _buildRatingSection(
+            idea.id,
+            currentUserId,
+            canManage,
+          ),
+
+          const SizedBox(height: 24),
+
+          _buildCommentsSection(idea.id),
         ],
       ),
     );
   }
 
-  Widget _buildAuthorInfo(Idea idea) {
-    return Row(
-      children: [
-        AppAvatar(
-          initials: idea.authorName.isEmpty
-              ? '?'
-              : idea.authorName[0].toUpperCase(),
-          size: 40,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                idea.authorName,
-                style: AppTextStyles.labelLarge.copyWith(
-                  fontWeight: FontWeight.w600,
+  Widget _buildRatingSection(
+    String ideaId,
+    String? currentUserId,
+    bool isOwner,
+  ) {
+    return Consumer<RatingController>(
+      builder: (context, ratingController, _) {
+        final RatingStats? stats = ratingController.getRatingStats(ideaId);
+        final hasUserRated =
+            ratingController.hasUserRatedIdea(ideaId, currentUserId);
+
+        final metricEntries = (stats?.averageScores ?? {}).entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.analytics_outlined,
+                  size: 20,
+                  color: AppColors.primary,
                 ),
+                const SizedBox(width: 8),
+                Text(
+                  'Ratings',
+                  style: AppTextStyles.headlineSmall.copyWith(fontSize: 18),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            AppCard(
+              backgroundColor: AppColors.surfaceContainerLowest,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Overall score: ${stats?.averageOverall.toStringAsFixed(1) ?? '0.0'} / 10',
+                    style: AppTextStyles.bodyLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Total ratings: ${stats?.totalRatings ?? 0}',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                  if (metricEntries.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: metricEntries
+                          .map(
+                            (entry) => AppBadge(
+                              label:
+                                  '${entry.key}: ${entry.value.toStringAsFixed(1)}',
+                              variant: AppBadgeVariant.tonal,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
+                ],
               ),
+            ),
+            const SizedBox(height: 12),
+            if (isOwner)
               Text(
-                'Posted ${_formatDate(idea.createdAt)}',
-                style: AppTextStyles.labelSmall.copyWith(
+                'Owners cannot rate their own ideas.',
+                style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.onSurfaceVariant,
+                ),
+              )
+            else if (hasUserRated)
+              Text(
+                'You have already rated this idea. Submit again to update your rating.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              )
+            else
+              const SizedBox.shrink(),
+            if (!isOwner) ...[
+              const SizedBox(height: 10),
+              AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppSlider(
+                      label: 'Originality',
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      value: _originalityScore,
+                      labelBuilder: (value) => value.round().toString(),
+                      onChanged: (value) {
+                        setState(() {
+                          _originalityScore = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    AppSlider(
+                      label: 'Feasibility',
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      value: _feasibilityScore,
+                      labelBuilder: (value) => value.round().toString(),
+                      onChanged: (value) {
+                        setState(() {
+                          _feasibilityScore = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    AppSlider(
+                      label: 'Impact',
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      value: _impactScore,
+                      labelBuilder: (value) => value.round().toString(),
+                      onChanged: (value) {
+                        setState(() {
+                          _impactScore = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    AppButton(
+                      label: 'Submit Rating',
+                      variant: AppButtonVariant.filled,
+                      size: AppButtonSize.medium,
+                      isFullWidth: true,
+                      onPressed: ratingController.isLoading
+                          ? null
+                          : () => _submitRating(ideaId),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCommentsSection(String ideaId) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.forum_outlined,
+              size: 20,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Discussion',
+              style: AppTextStyles.headlineSmall.copyWith(fontSize: 18),
+            ),
+          ],
         ),
+        const SizedBox(height: 10),
+        CommentsSection(ideaId: ideaId),
       ],
     );
   }
 
-  Widget _buildSection(
-    BuildContext context, {
+  Future<void> _submitRating(String ideaId) async {
+    final ratingController = context.read<RatingController>();
+    final success = await ratingController.rateIdea(
+      ideaId: ideaId,
+      originality: _originalityScore.round(),
+      feasibility: _feasibilityScore.round(),
+      impact: _impactScore.round(),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? ratingController.successMessage ?? 'Rating submitted.'
+              : ratingController.error ?? 'Unable to submit rating.',
+        ),
+        backgroundColor: success ? AppColors.primary : AppColors.error,
+      ),
+    );
+  }
+
+  void _openConversation(Idea idea) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => IdeaConversationScreen(
+          ideaId: idea.id,
+          ideaTitle: idea.title,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection({
     required String title,
     required String content,
     required IconData icon,
-    required Color accentColor,
+    required Color color,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, color: accentColor, size: 20),
+            Icon(icon, color: color, size: 20),
             const SizedBox(width: 8),
             Text(
               title,
-              style: AppTextStyles.headlineSmall.copyWith(
-                fontSize: 18,
-              ),
+              style: AppTextStyles.headlineSmall.copyWith(fontSize: 18),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         AppCard(
           backgroundColor: AppColors.surfaceContainerLowest,
           padding: const EdgeInsets.all(16),
           child: Text(
             content,
             style: AppTextStyles.bodyLarge.copyWith(
-              height: 1.6,
               color: AppColors.onSurface,
+              height: 1.55,
             ),
           ),
         ),
@@ -259,285 +504,582 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
     );
   }
 
-  Widget _buildEvaluationSection(BuildContext context, String ideaId) {
-    return Consumer<RatingController>(
-      builder: (context, ratingController, _) {
-        final stats = ratingController.getRatingStats(ideaId);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Community Evaluation',
-              style: AppTextStyles.headlineSmall.copyWith(
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (stats != null) ...[
-              _buildRatingStatsCard(stats),
-              const SizedBox(height: 16),
-            ] else
-              AppCard(
-                backgroundColor: AppColors.surfaceContainerLowest,
-                padding: const EdgeInsets.all(16),
-                child: Center(
-                  child: Text(
-                    'No evaluations yet. Be the first to rate!',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ),
-            AppButton(
-              label: 'Rate This Idea',
-              variant: AppButtonVariant.filled,
-              size: AppButtonSize.medium,
-              isFullWidth: true,
-              icon: Icons.star_outline,
-              onPressed: () => _showRatingDialog(context, ideaId),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildRatingStatsCard(dynamic stats) {
+  Widget _buildContextSection(Idea idea) {
     return AppCard(
-      backgroundColor: AppColors.primaryContainer.withOpacity(0.3),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Average Rating',
-                    style: AppTextStyles.labelMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${stats.getAverageRating().toStringAsFixed(1)}/10',
-                    style: AppTextStyles.headlineSmall.copyWith(
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
+          Text(
+            'Context',
+            style: AppTextStyles.titleMedium,
+          ),
+          const SizedBox(height: 10),
+          if (idea.belongsToCommunity)
+            Text(
+              'Community ID: ${idea.communityId}',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.onSurfaceVariant,
               ),
-              Text(
-                '${stats.getRatingCount()} ratings',
-                style: AppTextStyles.labelSmall.copyWith(
+            ),
+          if (idea.belongsToOrganisation)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'Organisation ID: ${idea.organisationId}',
+                style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildMetricRow(
-            'Originality',
-            stats.averageOriginality,
-            AppColors.primary,
-          ),
-          const SizedBox(height: 8),
-          _buildMetricRow(
-            'Feasibility',
-            stats.averageFeasibility,
-            AppColors.secondary,
-          ),
-          const SizedBox(height: 8),
-          _buildMetricRow(
-            'Impact',
-            stats.averageImpact,
-            AppColors.tertiary,
-          ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildMetricRow(String label, double value, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.bodySmall,
-        ),
-        Row(
-          children: [
-            SizedBox(
-              width: 80,
-              child: AppLinearProgress(
-                value: value / 10,
-                height: 4,
-                color: color,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${value.toStringAsFixed(1)}/10',
-              style: AppTextStyles.labelSmall.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDiscussionSection(BuildContext context, String ideaId) {
+  Widget _buildCriteriaSection({
+    required IdeaController controller,
+    required Idea idea,
+    required bool canManageCriteria,
+    required bool canManage,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Discussion',
-          style: AppTextStyles.headlineSmall.copyWith(
-            fontSize: 18,
-          ),
+        Row(
+          children: [
+            Text(
+              'Evaluation Criteria',
+              style: AppTextStyles.headlineSmall.copyWith(fontSize: 18),
+            ),
+            const Spacer(),
+            if (canManageCriteria)
+              AppButton(
+                label: 'Add',
+                size: AppButtonSize.small,
+                variant: AppButtonVariant.outlined,
+                icon: Icons.add,
+                onPressed: () => _handleCreateCriteria(idea),
+              ),
+          ],
         ),
-        const SizedBox(height: 12),
-        CommentsSection(ideaId: ideaId),
+        const SizedBox(height: 10),
+        if (canManage && !canManageCriteria)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              'Criteria can be managed only during INCEPTION stage.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ),
+        if (idea.criteria.isEmpty)
+          AppCard(
+            backgroundColor: AppColors.surfaceContainerLowest,
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'No custom criteria were added for this idea.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          )
+        else
+          ...(() {
+            final sortedCriteria = idea.criteria.toList()
+              ..sort((a, b) => a.order.compareTo(b.order));
+            return sortedCriteria.map(
+                (criterion) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: AppCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                criterion.name,
+                                style: AppTextStyles.labelLarge,
+                              ),
+                            ),
+                            AppBadge(
+                              label: '#${criterion.order + 1}',
+                              variant: AppBadgeVariant.tonal,
+                            ),
+                          ],
+                        ),
+                        if (criterion.description.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            criterion.description,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                        if (canManageCriteria) ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              AppButton(
+                                label: 'Up',
+                                size: AppButtonSize.small,
+                                variant: AppButtonVariant.outlined,
+                                icon: Icons.arrow_upward,
+                                onPressed: () => _handleReorderCriteria(
+                                  idea,
+                                  criterion,
+                                  true,
+                                ),
+                              ),
+                              AppButton(
+                                label: 'Down',
+                                size: AppButtonSize.small,
+                                variant: AppButtonVariant.outlined,
+                                icon: Icons.arrow_downward,
+                                onPressed: () => _handleReorderCriteria(
+                                  idea,
+                                  criterion,
+                                  false,
+                                ),
+                              ),
+                              AppButton(
+                                label: 'Edit',
+                                size: AppButtonSize.small,
+                                variant: AppButtonVariant.outlined,
+                                icon: Icons.edit_outlined,
+                                onPressed: () =>
+                                    _handleEditCriteria(idea, criterion),
+                              ),
+                              AppButton(
+                                label: 'Delete',
+                                size: AppButtonSize.small,
+                                variant: AppButtonVariant.outlined,
+                                icon: Icons.delete_outline,
+                                onPressed: () =>
+                                    _handleDeleteCriteria(idea, criterion),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              );
+          })(),
       ],
     );
   }
 
-  void _showRatingDialog(BuildContext context, String ideaId) {
-    double originality = 5;
-    double feasibility = 5;
-    double impact = 5;
+  Future<void> _showEditIdeaSheet(Idea idea) async {
+    final titleController = TextEditingController(text: idea.title);
+    final descriptionController = TextEditingController(text: idea.description);
 
-    showDialog(
+    IdeaVisibility selectedVisibility = idea.visibility;
+    IdeaStage selectedStage = idea.stage;
+
+    final saved = await showModalBottomSheet<bool>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header
-                      Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Rate This Idea',
-                            style: AppTextStyles.headlineSmall,
-                          ),
-                          GestureDetector(
-                            onTap: () =>
-                                Navigator.pop(dialogContext),
-                            child: Icon(
-                              Icons.close,
-                              color: AppColors.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Originality slider
-                      AppSlider(
-                        value: originality,
-                        min: 0,
-                        max: 10,
-                        divisions: 10,
-                        label: 'Originality',
-                        onChanged: (value) {
-                          setState(() => originality = value);
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Feasibility slider
-                      AppSlider(
-                        value: feasibility,
-                        min: 0,
-                        max: 10,
-                        divisions: 10,
-                        label: 'Feasibility',
-                        onChanged: (value) {
-                          setState(() => feasibility = value);
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Impact slider
-                      AppSlider(
-                        value: impact,
-                        min: 0,
-                        max: 10,
-                        divisions: 10,
-                        label: 'Impact',
-                        onChanged: (value) {
-                          setState(() => impact = value);
-                        },
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Actions
-                      Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.end,
-                        children: [
-                          AppButton(
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 18,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Edit Idea',
+                      style: AppTextStyles.titleLarge,
+                    ),
+                    const SizedBox(height: 14),
+                    AppInput(
+                      label: 'Title',
+                      hint: 'Idea title',
+                      controller: titleController,
+                      maxLength: 200,
+                      showCounter: true,
+                    ),
+                    const SizedBox(height: 12),
+                    AppInput(
+                      label: 'Description',
+                      hint: 'Idea description',
+                      controller: descriptionController,
+                      maxLines: 5,
+                      maxLength: 5000,
+                      showCounter: true,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Visibility',
+                      style: AppTextStyles.labelLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: IdeaVisibility.values.map((visibility) {
+                        return ChoiceChip(
+                          label: Text(visibilityToString(visibility)),
+                          selected: selectedVisibility == visibility,
+                          onSelected: (selected) {
+                            if (!selected) {
+                              return;
+                            }
+                            setModalState(() {
+                              selectedVisibility = visibility;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Stage',
+                      style: AppTextStyles.labelLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: IdeaStage.values.map((stage) {
+                        return ChoiceChip(
+                          label: Text(stageToString(stage)),
+                          selected: selectedStage == stage,
+                          onSelected: (selected) {
+                            if (!selected) {
+                              return;
+                            }
+                            setModalState(() {
+                              selectedStage = stage;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
                             label: 'Cancel',
-                            variant: AppButtonVariant.text,
-                            size: AppButtonSize.medium,
-                            onPressed: () =>
-                                Navigator.pop(dialogContext),
+                            variant: AppButtonVariant.outlined,
+                            onPressed: () => Navigator.of(sheetContext).pop(false),
                           ),
-                          const SizedBox(width: 12),
-                          AppButton(
-                            label: 'Submit',
-                            variant:
-                                AppButtonVariant.filled,
-                            size: AppButtonSize.medium,
-                            onPressed: () {
-                              context
-                                  .read<
-                                      RatingController>()
-                                  .rateIdea(
-                                    ideaId: ideaId,
-                                    originality:
-                                        originality
-                                            .toInt(),
-                                    feasibility:
-                                        feasibility
-                                            .toInt(),
-                                    impact: impact
-                                        .toInt(),
-                                  );
-                              Navigator.pop(
-                                  dialogContext);
-                            },
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: AppButton(
+                            label: 'Save',
+                            variant: AppButtonVariant.filled,
+                            onPressed: () => Navigator.of(sheetContext).pop(true),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
+    );
+
+    final updatedTitle = titleController.text.trim();
+    final updatedDescription = descriptionController.text.trim();
+    titleController.dispose();
+    descriptionController.dispose();
+
+    if (saved != true || !mounted) {
+      return;
+    }
+
+    final controller = context.read<IdeaController>();
+    final success = await controller.updateIdea(
+      idea.id,
+      title: updatedTitle,
+      description: updatedDescription,
+      visibility: selectedVisibility,
+      stage: selectedStage,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    _showControllerMessage(
+      controller: controller,
+      success: success,
+      successFallback: 'Idea updated successfully.',
+      errorFallback: 'Unable to update idea.',
+    );
+  }
+
+  Future<void> _handleCreateCriteria(Idea idea) async {
+    final result = await _showCriteriaDialog();
+    if (result == null || !mounted) {
+      return;
+    }
+
+    final controller = context.read<IdeaController>();
+    final success = await controller.createCriteria(
+      ideaId: idea.id,
+      name: result.name,
+      description: result.description,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    _showControllerMessage(
+      controller: controller,
+      success: success,
+      successFallback: 'Criteria created successfully.',
+      errorFallback: 'Unable to create criteria.',
+    );
+  }
+
+  Future<void> _handleEditCriteria(Idea idea, EvaluationCriteria criteria) async {
+    final result = await _showCriteriaDialog(
+      initialName: criteria.name,
+      initialDescription: criteria.description,
+    );
+
+    if (result == null || !mounted) {
+      return;
+    }
+
+    final controller = context.read<IdeaController>();
+    final success = await controller.updateCriteria(
+      ideaId: idea.id,
+      criteriaId: criteria.id,
+      name: result.name,
+      description: result.description,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    _showControllerMessage(
+      controller: controller,
+      success: success,
+      successFallback: 'Criteria updated successfully.',
+      errorFallback: 'Unable to update criteria.',
+    );
+  }
+
+  Future<void> _handleDeleteCriteria(
+    Idea idea,
+    EvaluationCriteria criteria,
+  ) async {
+    final confirm = await showAppAlertDialog(
+      context,
+      title: 'Delete Criteria',
+      message: 'Delete "${criteria.name}" from this idea?',
+      positiveLabel: 'Delete',
+      negativeLabel: 'Cancel',
+      type: AlertType.warning,
+    );
+
+    if (confirm != true || !mounted) {
+      return;
+    }
+
+    final controller = context.read<IdeaController>();
+    final success = await controller.deleteCriteria(
+      ideaId: idea.id,
+      criteriaId: criteria.id,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    _showControllerMessage(
+      controller: controller,
+      success: success,
+      successFallback: 'Criteria deleted successfully.',
+      errorFallback: 'Unable to delete criteria.',
+    );
+  }
+
+  Future<void> _handleReorderCriteria(
+    Idea idea,
+    EvaluationCriteria criteria,
+    bool moveUp,
+  ) async {
+    final controller = context.read<IdeaController>();
+    final success = await controller.reorderCriteria(
+      ideaId: idea.id,
+      criteriaId: criteria.id,
+      moveUp: moveUp,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    _showControllerMessage(
+      controller: controller,
+      success: success,
+      successFallback: 'Criteria order updated.',
+      errorFallback: 'Unable to update criteria order.',
+    );
+  }
+
+  Future<void> _handleDeleteIdea(String ideaId) async {
+    final confirm = await showAppAlertDialog(
+      context,
+      title: 'Delete Idea',
+      message: 'Are you sure you want to permanently delete this idea?',
+      positiveLabel: 'Delete',
+      negativeLabel: 'Cancel',
+      type: AlertType.warning,
+    );
+
+    if (confirm != true || !mounted) {
+      return;
+    }
+
+    final controller = context.read<IdeaController>();
+    final success = await controller.deleteIdea(ideaId);
+
+    if (!mounted) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? controller.successMessage ?? 'Idea deleted.'
+              : controller.error ?? 'Unable to delete idea.',
+        ),
+        backgroundColor: success ? AppColors.primary : AppColors.error,
+      ),
+    );
+
+    if (success) {
+      navigator.pop();
+    }
+  }
+
+  Future<_CriteriaDialogResult?> _showCriteriaDialog({
+    String? initialName,
+    String? initialDescription,
+  }) {
+    final nameController = TextEditingController(text: initialName ?? '');
+    final descriptionController =
+        TextEditingController(text: initialDescription ?? '');
+
+    return showDialog<_CriteriaDialogResult>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Text(
+            initialName == null ? 'Add Criteria' : 'Edit Criteria',
+            style: AppTextStyles.titleLarge,
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  maxLength: 100,
+                  decoration: const InputDecoration(
+                    labelText: 'Criteria Name',
+                    hintText: 'e.g. Feasibility',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: descriptionController,
+                  maxLength: 500,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'Describe how this criterion should be assessed',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+                final description = descriptionController.text.trim();
+
+                if (name.length < 2 || description.length < 5) {
+                  return;
+                }
+
+                Navigator.of(dialogContext).pop(
+                  _CriteriaDialogResult(
+                    name: name,
+                    description: description,
+                  ),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    ).whenComplete(() {
+      nameController.dispose();
+      descriptionController.dispose();
+    });
+  }
+
+  void _showControllerMessage({
+    required IdeaController controller,
+    required bool success,
+    required String successFallback,
+    required String errorFallback,
+  }) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? controller.successMessage ?? successFallback
+              : controller.error ?? errorFallback,
+        ),
+        backgroundColor: success ? AppColors.primary : AppColors.error,
+      ),
     );
   }
 
@@ -561,10 +1103,11 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
           ),
           const SizedBox(height: 24),
           AppButton(
-            label: 'Go Back',
+            label: 'Retry',
             variant: AppButtonVariant.filled,
             size: AppButtonSize.medium,
-            onPressed: () => Navigator.pop(context),
+            onPressed: () =>
+                context.read<IdeaController>().loadIdeaDetails(widget.ideaId),
           ),
         ],
       ),
@@ -577,15 +1120,30 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
 
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
-        return '${difference.inMinutes} minutes ago';
+        final minutes = difference.inMinutes;
+        return minutes <= 0 ? 'just now' : '$minutes minutes ago';
       }
       return '${difference.inHours} hours ago';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
     }
+
+    if (difference.inDays == 1) {
+      return 'Yesterday';
+    }
+
+    if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    }
+
+    return '${date.day}/${date.month}/${date.year}';
   }
+}
+
+class _CriteriaDialogResult {
+  final String name;
+  final String description;
+
+  const _CriteriaDialogResult({
+    required this.name,
+    required this.description,
+  });
 }

@@ -159,6 +159,7 @@ class _CommentsSectionState extends State<CommentsSection> {
                 onPressed: controller.isLoading
                     ? null
                     : () async {
+                        final messenger = ScaffoldMessenger.of(context);
                         final success = await controller.createComment(
                           ideaId: widget.ideaId,
                           text: _commentController.text,
@@ -166,7 +167,7 @@ class _CommentsSectionState extends State<CommentsSection> {
                         if (success) {
                           _commentController.clear();
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Comment posted!'),
                                 duration: Duration(seconds: 2),

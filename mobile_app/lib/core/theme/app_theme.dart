@@ -49,7 +49,7 @@ class AppTheme {
         centerTitle: false,
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.onSurface,
-        shadowColor: AppColors.outline.withOpacity(0.1),
+        shadowColor: AppColors.outline.withValues(alpha: 0.1),
         surfaceTintColor: AppColors.surfaceTint,
         iconTheme: const IconThemeData(color: AppColors.primary),
         titleTextStyle: AppTextStyles.headlineMedium,
@@ -124,7 +124,7 @@ class AppTheme {
           ),
           textStyle: AppTextStyles.labelLarge,
           elevation: 2,
-          shadowColor: AppColors.primary.withOpacity(0.2),
+          shadowColor: AppColors.primary.withValues(alpha: 0.2),
         ),
       ),
 
@@ -171,8 +171,8 @@ class AppTheme {
           ),
         ),
         color: AppColors.surface,
-        shadowColor: AppColors.outline.withOpacity(0.1),
-        surfaceTintColor: AppColors.primary.withOpacity(0.03),
+        shadowColor: AppColors.outline.withValues(alpha: 0.1),
+        surfaceTintColor: AppColors.primary.withValues(alpha: 0.03),
       ),
 
       // Chip Theme
@@ -250,7 +250,7 @@ class AppTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primary.withOpacity(0.5);
+            return AppColors.primary.withValues(alpha: 0.5);
           }
           return AppColors.surfaceVariant;
         }),

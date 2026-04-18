@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../core/config/environment.dart';
 
@@ -118,6 +119,6 @@ class ResponseHandler {
 /// Debug logging utility
 void debugLog(String message) {
   if (Environment.isDebug) {
-    print('[Ideole API] $message');
+    debugPrint('[Ideole API] $message');
   }
 }

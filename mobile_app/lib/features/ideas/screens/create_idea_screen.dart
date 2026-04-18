@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/widgets/index.dart';
 import '../controllers/idea_controller.dart';
 import '../models/idea.dart';
 
 class CreateIdeaScreen extends StatefulWidget {
-  const CreateIdeaScreen({super.key});
+  final String? communityId;
+  final String? organisationId;
+
+  const CreateIdeaScreen({
+    super.key,
+    this.communityId,
+    this.organisationId,
+  });
 
   @override
   State<CreateIdeaScreen> createState() => _CreateIdeaScreenState();
@@ -13,37 +21,40 @@ class CreateIdeaScreen extends StatefulWidget {
 class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _problemController = TextEditingController();
-  final _solutionController = TextEditingController();
+  final _descriptionController = TextEditingController();
 
-  String _selectedCategory = 'Technology';
+  final List<_CriteriaDraft> _criteriaDrafts = [];
   IdeaVisibility _selectedVisibility = IdeaVisibility.private;
 
-  static const List<String> categories = [
-    'Technology',
-    'Health',
-    'Education',
-    'Environment',
-    'Business',
-    'Social',
-    'Entertainment',
-    'Other',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    if (widget.communityId != null && widget.communityId!.isNotEmpty) {
+      _selectedVisibility = IdeaVisibility.protected;
+    }
+  }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _problemController.dispose();
-    _solutionController.dispose();
+    _descriptionController.dispose();
+    for (final draft in _criteriaDrafts) {
+      draft.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: const Text('Share Your Idea'),
+        backgroundColor: AppColors.surface,
         elevation: 0,
+        title: Text(
+          'Create Idea',
+          style: AppTextStyles.titleLarge,
+        ),
       ),
       body: Consumer<IdeaController>(
         builder: (context, controller, _) {
@@ -54,161 +65,128 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title field
-                  Text(
-                    'Title',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      hintText: 'Give your idea a catchy title',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  if (widget.communityId != null) ...[
+                    AppCard(
+                      padding: const EdgeInsets.all(12),
+                      backgroundColor: AppColors.primaryContainer,
+                      borderColor: AppColors.primary,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.groups,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'This idea will be created in a community context.',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  AppInput(
+                    label: 'Title',
+                    hint: 'Summarize your idea in one clear sentence',
+                    controller: _titleController,
+                    textCapitalization: TextCapitalization.sentences,
+                    maxLength: 200,
+                    showCounter: true,
                     validator: (value) {
-                      if (value?.isEmpty ?? true) {
+                      if (value == null || value.trim().isEmpty) {
                         return 'Title is required';
                       }
-                      if (value!.length < 5) {
-                        return 'Title must be at least 5 characters';
+                      if (value.trim().length < 3) {
+                        return 'Title must be at least 3 characters';
                       }
                       return null;
                     },
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Category dropdown
-                  Text(
-                    'Category',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedCategory,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    items: categories
-                        .map(
-                          (category) => DropdownMenuItem(
-                            value: category,
-                            child: Text(category),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedCategory = value);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Problem field
-                  Text(
-                    'Problem',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _problemController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      hintText: 'What problem does this idea solve?',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
+                  AppInput(
+                    label: 'Description',
+                    hint: 'Describe the idea, its value, and intended impact',
+                    controller: _descriptionController,
+                    textCapitalization: TextCapitalization.sentences,
+                    maxLines: 6,
+                    maxLength: 5000,
+                    showCounter: true,
                     validator: (value) {
-                      if (value?.isEmpty ?? true) {
-                        return 'Problem description is required';
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Description is required';
                       }
-                      if (value!.length < 20) {
-                        return 'Problem description should be at least 20 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Solution field
-                  Text(
-                    'Solution',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _solutionController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      hintText: 'How does your idea solve the problem?',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value?.isEmpty ?? true) {
-                        return 'Solution description is required';
-                      }
-                      if (value!.length < 20) {
-                        return 'Solution description should be at least 20 characters';
+                      if (value.trim().length < 10) {
+                        return 'Description must be at least 10 characters';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 20),
 
-                  // Visibility selector
                   Text(
                     'Visibility',
-                    style: Theme.of(context).textTheme.titleSmall,
+                    style: AppTextStyles.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  _buildVisibilitySelector(context),
+                  _buildVisibilitySelector(),
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Evaluation Criteria',
+                        style: AppTextStyles.titleMedium,
+                      ),
+                      AppButton(
+                        label: 'Add',
+                        size: AppButtonSize.small,
+                        variant: AppButtonVariant.outlined,
+                        icon: Icons.add,
+                        onPressed: _addCriteriaDraft,
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Text(
-                    _getVisibilityDescription(),
-                    style: Theme.of(context).textTheme.labelSmall,
+                    'Optional criteria let reviewers evaluate ideas consistently.',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
                   ),
+                  const SizedBox(height: 12),
+                  _buildCriteriaSection(),
                   const SizedBox(height: 24),
 
-                  // Error message
-                  if (controller.error != null)
-                    Container(
-                      width: double.infinity,
+                  if (controller.error != null) ...[
+                    AppCard(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red[300]!),
-                      ),
+                      backgroundColor: AppColors.errorContainer,
+                      borderColor: AppColors.error,
                       child: Text(
                         controller.error!,
-                        style: TextStyle(color: Colors.red[700]),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.onErrorContainer,
+                        ),
                       ),
                     ),
-                  if (controller.error != null) const SizedBox(height: 16),
+                    const SizedBox(height: 16),
+                  ],
 
-                  // Submit button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: controller.isLoading ? null : _submitIdea,
-                      child: controller.isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text('Share Idea'),
-                    ),
+                  AppButton(
+                    label: 'Create Idea',
+                    variant: AppButtonVariant.filled,
+                    size: AppButtonSize.large,
+                    isFullWidth: true,
+                    isLoading: controller.isLoading,
+                    onPressed: controller.isLoading ? null : _submitIdea,
                   ),
                 ],
               ),
@@ -219,7 +197,7 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
     );
   }
 
-  Widget _buildVisibilitySelector(BuildContext context) {
+  Widget _buildVisibilitySelector() {
     return Row(
       children: IdeaVisibility.values
           .map(
@@ -227,9 +205,7 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: ChoiceChip(
-                  label: Text(
-                    visibility.toString().split('.').last.toUpperCase(),
-                  ),
+                  label: Text(visibilityToString(visibility)),
                   selected: _selectedVisibility == visibility,
                   onSelected: (selected) {
                     if (selected) {
@@ -244,15 +220,82 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
     );
   }
 
-  String _getVisibilityDescription() {
-    switch (_selectedVisibility) {
-      case IdeaVisibility.private:
-        return 'Only you can see this idea. Keep it private until you\'re ready to share.';
-      case IdeaVisibility.community:
-        return 'Shared with community members. Limited visibility.';
-      case IdeaVisibility.public:
-        return 'Everyone can see and rate your idea. Open for collaboration.';
+  Widget _buildCriteriaSection() {
+    if (_criteriaDrafts.isEmpty) {
+      return AppCard(
+        padding: const EdgeInsets.all(12),
+        backgroundColor: AppColors.surfaceVariant,
+        child: Text(
+          'No custom criteria added.',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
+        ),
+      );
     }
+
+    return Column(
+      children: _criteriaDrafts.asMap().entries.map((entry) {
+        final index = entry.key;
+        final draft = entry.value;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: AppCard(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Criterion ${index + 1}',
+                      style: AppTextStyles.labelLarge,
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Remove criterion',
+                      onPressed: () => _removeCriteriaDraft(index),
+                      icon: Icon(
+                        Icons.close,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                AppInput(
+                  label: 'Name',
+                  hint: 'e.g. Feasibility',
+                  controller: draft.nameController,
+                  maxLength: 100,
+                  showCounter: true,
+                ),
+                const SizedBox(height: 12),
+                AppInput(
+                  label: 'Description',
+                  hint: 'How should this criterion be evaluated?',
+                  controller: draft.descriptionController,
+                  maxLines: 3,
+                  maxLength: 500,
+                  showCounter: true,
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  void _addCriteriaDraft() {
+    setState(() {
+      _criteriaDrafts.add(_CriteriaDraft());
+    });
+  }
+
+  void _removeCriteriaDraft(int index) {
+    final draft = _criteriaDrafts.removeAt(index);
+    draft.dispose();
+    setState(() {});
   }
 
   Future<void> _submitIdea() async {
@@ -260,28 +303,64 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
       return;
     }
 
+    final criteria = <IdeaCriteriaInput>[];
+    for (final draft in _criteriaDrafts) {
+      final name = draft.nameController.text.trim();
+      final description = draft.descriptionController.text.trim();
+
+      if (name.isEmpty && description.isEmpty) {
+        continue;
+      }
+
+      if (name.length < 2 || description.length < 5) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Each criterion needs a name and detailed description.'),
+          ),
+        );
+        return;
+      }
+
+      criteria.add(
+        IdeaCriteriaInput(
+          name: name,
+          description: description,
+        ),
+      );
+    }
+
     final controller = context.read<IdeaController>();
     final success = await controller.createIdea(
       title: _titleController.text.trim(),
-      problemText: _problemController.text.trim(),
-      solutionText: _solutionController.text.trim(),
-      category: _selectedCategory,
+      description: _descriptionController.text.trim(),
       visibility: _selectedVisibility,
+      communityId: widget.communityId,
+      organisationId: widget.organisationId,
+      criteria: criteria,
     );
 
-    if (success && mounted) {
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Idea shared successfully! 🎉'),
+          content: Text('Idea created successfully.'),
           duration: Duration(seconds: 2),
         ),
       );
-
-      // Navigate back after delay
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      Navigator.of(context).pop();
     }
+  }
+}
+
+class _CriteriaDraft {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+
+  void dispose() {
+    nameController.dispose();
+    descriptionController.dispose();
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/widgets/index.dart';
 import '../controllers/idea_controller.dart';
+import '../models/idea.dart';
 import 'idea_detail_screen.dart';
 import 'create_idea_screen.dart';
 
@@ -181,14 +182,14 @@ class _MyIdeasScreenState extends State<MyIdeasScreen> {
                           ),
                         ),
                         AppBadge(
-                          label: idea.visibility.toString().split('.').last,
+                          label: visibilityToString(idea.visibility),
                           variant: AppBadgeVariant.tonal,
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      idea.problemText,
+                      idea.shortDescription,
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
