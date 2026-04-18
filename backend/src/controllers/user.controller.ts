@@ -2,6 +2,49 @@ import type { Request, Response } from 'express';
 import { UserService } from '../services/user.service.ts';
 
 export const UserControllers = {
+  async searchUsers(req: Request, res: Response) {
+    try {
+      const requesterId = req.user?.id;
+      if (!requesterId) {
+        return res.status(401).json({
+          message: 'error',
+          details: 'User not authenticated',
+        });
+      }
+
+      const rawQuery = req.query.q;
+      const query = typeof rawQuery === 'string' ? rawQuery.trim() : '';
+      if (query.length < 2) {
+        return res.status(200).json({
+          success: true,
+          data: [],
+        });
+      }
+
+      const rawLimit = req.query.limit;
+      const parsedLimit =
+        typeof rawLimit === 'string'
+          ? Number.parseInt(rawLimit, 10)
+          : undefined;
+
+      const users = await UserService.searchUsers({
+        query,
+        limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+        excludeUserId: requesterId,
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: users,
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        message: 'error',
+        details: err.message,
+      });
+    }
+  },
+
   async getUserById(req: Request, res: Response) {
     try {
       const { userId } = req.params;

@@ -24,21 +24,43 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen>
       'id': 'starter',
       'label': 'Starter',
       'description': 'Perfect for small teams',
-      'features': ['Up to 5 communities', 'Basic features', 'Community support'],
+      'maxCommunities': 'Up to 5 communities',
+      'features': [
+        'Up to 5 communities',
+        'Basic features',
+        'Community support',
+      ],
     },
     {
       'id': 'professional',
       'label': 'Professional',
       'description': 'For growing organizations',
-      'features': ['Up to 20 communities', 'Advanced features', 'Priority support'],
+      'maxCommunities': 'Up to 20 communities',
+      'features': [
+        'Up to 20 communities',
+        'Advanced features',
+        'Priority support',
+      ],
     },
     {
       'id': 'enterprise',
       'label': 'Enterprise',
       'description': 'Complete solution',
-      'features': ['Unlimited communities', 'All features', 'Dedicated support'],
+      'maxCommunities': 'Unlimited communities',
+      'features': [
+        'Unlimited communities',
+        'All features',
+        'Dedicated support',
+      ],
     },
   ];
+
+  Map<String, dynamic> get _selectedTierConfig {
+    return tiers.firstWhere(
+      (tier) => tier['id'] == _selectedTier,
+      orElse: () => tiers.first,
+    );
+  }
 
   @override
   void initState() {
@@ -87,9 +109,7 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen>
         SnackBar(
           content: Text(
             controller.error!,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.onError,
-            ),
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.onError),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -111,9 +131,11 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen>
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.xl,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.xxl,
+            AppSpacing.xxl,
+            AppSpacing.xxl,
+            AppSpacing.xxl + MediaQuery.of(context).padding.bottom,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,8 +161,7 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen>
                     size: AppButtonSize.large,
                     isFullWidth: true,
                     isLoading: controller.isLoading,
-                    onPressed:
-                        controller.isLoading ? null : _handleCreate,
+                    onPressed: controller.isLoading ? null : _handleCreate,
                   );
                 },
               ),
@@ -152,22 +173,22 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen>
   }
 
   Widget _buildHeader() {
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(0, -0.3),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-      ),
-      child: Opacity(
-        opacity: _animationController.value,
+    final animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    );
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, -0.08),
+          end: Offset.zero,
+        ).animate(animation),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Create Organization',
-              style: AppTextStyles.displayMedium,
-            ),
+            Text('Create Organization', style: AppTextStyles.displayMedium),
             SizedBox(height: AppSpacing.sm),
             Text(
               'Build and manage your community of innovators',
@@ -206,13 +227,12 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen>
   }
 
   Widget _buildTierSelection() {
+    final selectedTier = _selectedTierConfig;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Choose Your Plan',
-          style: AppTextStyles.headlineSmall,
-        ),
+        Text('Choose Your Plan', style: AppTextStyles.headlineSmall),
         SizedBox(height: AppSpacing.lg),
         Column(
           children: tiers
@@ -223,6 +243,28 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen>
                 ),
               )
               .toList(),
+        ),
+        SizedBox(height: AppSpacing.md),
+        AppCard(
+          padding: EdgeInsets.all(AppSpacing.lg),
+          backgroundColor: AppColors.surfaceContainerLowest,
+          borderColor: AppColors.outlineVariant,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Selected: ${selectedTier['label']}',
+                style: AppTextStyles.titleMedium,
+              ),
+              SizedBox(height: AppSpacing.xs),
+              Text(
+                selectedTier['maxCommunities'],
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -239,7 +281,9 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen>
       child: Container(
         padding: EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryContainer : AppColors.surfaceVariant,
+          color: isSelected
+              ? AppColors.primaryContainer
+              : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.outline,
@@ -278,9 +322,7 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.outline,
+                      color: isSelected ? AppColors.primary : AppColors.outline,
                       width: 2,
                     ),
                   ),

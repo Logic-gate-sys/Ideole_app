@@ -8,11 +8,7 @@ class CreateIdeaScreen extends StatefulWidget {
   final String? communityId;
   final String? organisationId;
 
-  const CreateIdeaScreen({
-    super.key,
-    this.communityId,
-    this.organisationId,
-  });
+  const CreateIdeaScreen({super.key, this.communityId, this.organisationId});
 
   @override
   State<CreateIdeaScreen> createState() => _CreateIdeaScreenState();
@@ -51,172 +47,163 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        title: Text(
-          'Create Idea',
-          style: AppTextStyles.titleLarge,
-        ),
+        title: Text('Create Idea', style: AppTextStyles.titleLarge),
       ),
-      body: Consumer<IdeaController>(
-        builder: (context, controller, _) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (widget.communityId != null) ...[
-                    AppCard(
-                      padding: const EdgeInsets.all(12),
-                      backgroundColor: AppColors.primaryContainer,
-                      borderColor: AppColors.primary,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.groups,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'This idea will be created in a community context.',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.onPrimaryContainer,
+      body: SafeArea(
+        child: Consumer<IdeaController>(
+          builder: (context, controller, _) {
+            final bottomInset = MediaQuery.of(context).padding.bottom;
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.communityId != null) ...[
+                      AppCard(
+                        padding: const EdgeInsets.all(12),
+                        backgroundColor: AppColors.primaryContainer,
+                        borderColor: AppColors.primary,
+                        child: Row(
+                          children: [
+                            Icon(Icons.groups, color: AppColors.primary),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'This idea will be created in a community context.',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.onPrimaryContainer,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  AppInput(
-                    label: 'Title',
-                    hint: 'Summarize your idea in one clear sentence',
-                    controller: _titleController,
-                    textCapitalization: TextCapitalization.sentences,
-                    maxLength: 200,
-                    showCounter: true,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Title is required';
-                      }
-                      if (value.trim().length < 3) {
-                        return 'Title must be at least 3 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  AppInput(
-                    label: 'Description',
-                    hint: 'Describe the idea, its value, and intended impact',
-                    controller: _descriptionController,
-                    textCapitalization: TextCapitalization.sentences,
-                    maxLines: 6,
-                    maxLength: 5000,
-                    showCounter: true,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Description is required';
-                      }
-                      if (value.trim().length < 10) {
-                        return 'Description must be at least 10 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  Text(
-                    'Visibility',
-                    style: AppTextStyles.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildVisibilitySelector(),
-                  const SizedBox(height: 20),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Evaluation Criteria',
-                        style: AppTextStyles.titleMedium,
-                      ),
-                      AppButton(
-                        label: 'Add',
-                        size: AppButtonSize.small,
-                        variant: AppButtonVariant.outlined,
-                        icon: Icons.add,
-                        onPressed: _addCriteriaDraft,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Optional criteria let reviewers evaluate ideas consistently.',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildCriteriaSection(),
-                  const SizedBox(height: 24),
-
-                  if (controller.error != null) ...[
-                    AppCard(
-                      padding: const EdgeInsets.all(12),
-                      backgroundColor: AppColors.errorContainer,
-                      borderColor: AppColors.error,
-                      child: Text(
-                        controller.error!,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.onErrorContainer,
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    AppInput(
+                      label: 'Title',
+                      hint: 'Summarize your idea in one clear sentence',
+                      controller: _titleController,
+                      textCapitalization: TextCapitalization.sentences,
+                      maxLength: 200,
+                      showCounter: true,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Title is required';
+                        }
+                        if (value.trim().length < 3) {
+                          return 'Title must be at least 3 characters';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
-                  ],
 
-                  AppButton(
-                    label: 'Create Idea',
-                    variant: AppButtonVariant.filled,
-                    size: AppButtonSize.large,
-                    isFullWidth: true,
-                    isLoading: controller.isLoading,
-                    onPressed: controller.isLoading ? null : _submitIdea,
-                  ),
-                ],
+                    AppInput(
+                      label: 'Description',
+                      hint: 'Describe the idea, its value, and intended impact',
+                      controller: _descriptionController,
+                      textCapitalization: TextCapitalization.sentences,
+                      maxLines: 6,
+                      maxLength: 5000,
+                      showCounter: true,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Description is required';
+                        }
+                        if (value.trim().length < 10) {
+                          return 'Description must be at least 10 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    Text('Visibility', style: AppTextStyles.titleMedium),
+                    const SizedBox(height: 8),
+                    _buildVisibilitySelector(),
+                    const SizedBox(height: 20),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Evaluation Criteria',
+                            style: AppTextStyles.titleMedium,
+                          ),
+                        ),
+                        AppButton(
+                          label: 'Add',
+                          size: AppButtonSize.small,
+                          variant: AppButtonVariant.outlined,
+                          icon: Icons.add,
+                          onPressed: _addCriteriaDraft,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Optional criteria let reviewers evaluate ideas consistently.',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildCriteriaSection(),
+                    const SizedBox(height: 24),
+
+                    if (controller.error != null) ...[
+                      AppCard(
+                        padding: const EdgeInsets.all(12),
+                        backgroundColor: AppColors.errorContainer,
+                        borderColor: AppColors.error,
+                        child: Text(
+                          controller.error!,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    AppButton(
+                      label: 'Create Idea',
+                      variant: AppButtonVariant.filled,
+                      size: AppButtonSize.large,
+                      isFullWidth: true,
+                      isLoading: controller.isLoading,
+                      onPressed: controller.isLoading ? null : _submitIdea,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildVisibilitySelector() {
-    return Row(
-      children: IdeaVisibility.values
-          .map(
-            (visibility) => Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(
-                  label: Text(visibilityToString(visibility)),
-                  selected: _selectedVisibility == visibility,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() => _selectedVisibility = visibility);
-                    }
-                  },
-                ),
-              ),
-            ),
-          )
-          .toList(),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: IdeaVisibility.values.map((visibility) {
+        return ChoiceChip(
+          label: Text(visibilityToString(visibility)),
+          selected: _selectedVisibility == visibility,
+          onSelected: (selected) {
+            if (selected) {
+              setState(() => _selectedVisibility = visibility);
+            }
+          },
+        );
+      }).toList(),
     );
   }
 
@@ -239,6 +226,7 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
         final index = entry.key;
         final draft = entry.value;
         return Padding(
+          key: ValueKey(draft),
           padding: const EdgeInsets.only(bottom: 12),
           child: AppCard(
             padding: const EdgeInsets.all(12),
@@ -268,6 +256,20 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
                   controller: draft.nameController,
                   maxLength: 100,
                   showCounter: true,
+                  validator: (value) {
+                    final name = value?.trim() ?? '';
+                    final description = draft.descriptionController.text.trim();
+
+                    if (name.isEmpty && description.isEmpty) {
+                      return null;
+                    }
+
+                    if (name.length < 2) {
+                      return 'Name must be at least 2 characters';
+                    }
+
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 12),
                 AppInput(
@@ -277,6 +279,20 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
                   maxLines: 3,
                   maxLength: 500,
                   showCounter: true,
+                  validator: (value) {
+                    final description = value?.trim() ?? '';
+                    final name = draft.nameController.text.trim();
+
+                    if (name.isEmpty && description.isEmpty) {
+                      return null;
+                    }
+
+                    if (description.length < 5) {
+                      return 'Description must be at least 5 characters';
+                    }
+
+                    return null;
+                  },
                 ),
               ],
             ),
@@ -299,6 +315,8 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
   }
 
   Future<void> _submitIdea() async {
+    FocusScope.of(context).unfocus();
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -315,18 +333,15 @@ class _CreateIdeaScreenState extends State<CreateIdeaScreen> {
       if (name.length < 2 || description.length < 5) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Each criterion needs a name and detailed description.'),
+            content: Text(
+              'Each criterion needs a name and detailed description.',
+            ),
           ),
         );
         return;
       }
 
-      criteria.add(
-        IdeaCriteriaInput(
-          name: name,
-          description: description,
-        ),
-      );
+      criteria.add(IdeaCriteriaInput(name: name, description: description));
     }
 
     final controller = context.read<IdeaController>();

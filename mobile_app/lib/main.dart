@@ -59,6 +59,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Ideole',
         debugShowCheckedModeBanner: false,
+        scrollBehavior: const AppScrollBehavior(),
         theme: AppTheme.lightTheme,
         themeMode: ThemeMode.light,
         home: const AppShell(),

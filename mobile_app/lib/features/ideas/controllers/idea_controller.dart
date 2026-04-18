@@ -319,13 +319,18 @@ class IdeaController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _ideaService.createIdeaCriteria(
+      final createdCriteria = await _ideaService.createIdeaCriteria(
         ideaId: ideaId,
         name: name,
         description: description,
       );
 
-      await loadIdeaDetails(ideaId);
+      final current = _selectedIdea;
+      if (current != null && current.id == ideaId) {
+        final criteria = [...current.criteria, createdCriteria]
+          ..sort((a, b) => a.order.compareTo(b.order));
+        _selectedIdea = current.copyWith(criteria: criteria);
+      }
 
       _successMessage = 'Criteria created successfully!';
       return true;
@@ -354,7 +359,7 @@ class IdeaController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _ideaService.updateIdeaCriteria(
+      final updatedCriteria = await _ideaService.updateIdeaCriteria(
         ideaId: ideaId,
         criteriaId: criteriaId,
         name: name,
@@ -362,7 +367,21 @@ class IdeaController extends ChangeNotifier {
         order: order,
       );
 
-      await loadIdeaDetails(ideaId);
+      final current = _selectedIdea;
+      if (current != null && current.id == ideaId) {
+        final criteria = current.criteria.map((criterion) {
+          if (criterion.id == criteriaId) {
+            return criterion.copyWith(
+              name: updatedCriteria.name,
+              description: updatedCriteria.description,
+              order: updatedCriteria.order,
+            );
+          }
+          return criterion;
+        }).toList()..sort((a, b) => a.order.compareTo(b.order));
+
+        _selectedIdea = current.copyWith(criteria: criteria);
+      }
 
       _successMessage = 'Criteria updated successfully!';
       return true;
@@ -393,7 +412,16 @@ class IdeaController extends ChangeNotifier {
         criteriaId: criteriaId,
       );
 
-      await loadIdeaDetails(ideaId);
+      final current = _selectedIdea;
+      if (current != null && current.id == ideaId) {
+        final criteria =
+            current.criteria
+                .where((criterion) => criterion.id != criteriaId)
+                .toList()
+              ..sort((a, b) => a.order.compareTo(b.order));
+
+        _selectedIdea = current.copyWith(criteria: criteria);
+      }
 
       _successMessage = 'Criteria deleted successfully!';
       return true;
@@ -421,8 +449,11 @@ class IdeaController extends ChangeNotifier {
       return false;
     }
 
-    final ordered = [...current.criteria]..sort((a, b) => a.order.compareTo(b.order));
-    final currentIndex = ordered.indexWhere((criterion) => criterion.id == criteriaId);
+    final ordered = [...current.criteria]
+      ..sort((a, b) => a.order.compareTo(b.order));
+    final currentIndex = ordered.indexWhere(
+      (criterion) => criterion.id == criteriaId,
+    );
 
     if (currentIndex == -1) {
       _error = 'Criteria not found.';
@@ -455,7 +486,21 @@ class IdeaController extends ChangeNotifier {
         order: source.order,
       );
 
-      await loadIdeaDetails(ideaId);
+      final selected = _selectedIdea;
+      if (selected != null && selected.id == ideaId) {
+        final criteria = selected.criteria.map((criterion) {
+          if (criterion.id == source.id) {
+            return criterion.copyWith(order: target.order);
+          }
+          if (criterion.id == target.id) {
+            return criterion.copyWith(order: source.order);
+          }
+          return criterion;
+        }).toList()..sort((a, b) => a.order.compareTo(b.order));
+
+        _selectedIdea = selected.copyWith(criteria: criteria);
+      }
+
       _successMessage = 'Criteria order updated.';
       return true;
     } on ApiException catch (e) {

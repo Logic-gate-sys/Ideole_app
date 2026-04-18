@@ -5,6 +5,14 @@ import { Validator } from '../middlewares/validate.middleware.ts';
 import { updateUserSchema } from '../schema/user.schema.ts';
 
 export function setupUserRoutes(router: Router) {
+  // Search users for invite/autocomplete (authenticated)
+  router.get(
+    '/users/search',
+    authenticate,
+    authorise('user:read:own'),
+    UserControllers.searchUsers
+  );
+
   // Get user by ID (public profile)
   router.get(
     '/users/:userId',
