@@ -24,6 +24,7 @@ class _SignUpScreenState extends State<SignUpScreen>
   final _confirmPasswordController = TextEditingController();
   late AnimationController _animationController;
   bool _agreedToTerms = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -48,6 +49,10 @@ class _SignUpScreenState extends State<SignUpScreen>
   }
 
   Future<void> _handleSignUp() async {
+    if (_isSubmitting) {
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -66,6 +71,11 @@ class _SignUpScreenState extends State<SignUpScreen>
     }
 
     final authController = context.read<AuthController>();
+    if (authController.isLoading) {
+      return;
+    }
+
+    _isSubmitting = true;
 
     try {
       final user = await authController.signup(
@@ -78,6 +88,7 @@ class _SignUpScreenState extends State<SignUpScreen>
 
       if (mounted && user != null) {
         FocusScope.of(context).unfocus();
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
@@ -95,6 +106,8 @@ class _SignUpScreenState extends State<SignUpScreen>
           ),
         );
       }
+    } finally {
+      _isSubmitting = false;
     }
   }
 
