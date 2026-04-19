@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/widgets/index.dart';
+import '../core/theme/theme_controller.dart';
 import '../features/auth/controllers/auth_controller.dart';
 import '../features/auth/screens/sign_in_screen.dart';
 import '../features/auth/utils/validators.dart';
@@ -56,7 +57,8 @@ class _AppShellState extends State<AppShell> {
           );
         }
 
-        if (!authController.isAuthenticated || authController.currentUser == null) {
+        if (!authController.isAuthenticated ||
+            authController.currentUser == null) {
           return const SignInScreen();
         }
 
@@ -91,10 +93,7 @@ class _AppShellState extends State<AppShell> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          top: BorderSide(
-            color: AppColors.outlineVariant,
-            width: 1,
-          ),
+          top: BorderSide(color: AppColors.outlineVariant, width: 1),
         ),
       ),
       child: BottomNavigationBar(
@@ -145,6 +144,7 @@ class _ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authController = context.watch<AuthController>();
+    final themeController = context.watch<ThemeController>();
     final user = authController.currentUser;
 
     if (user == null) {
@@ -156,10 +156,7 @@ class _ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        title: Text(
-          'Profile',
-          style: AppTextStyles.titleLarge,
-        ),
+        title: Text('Profile', style: AppTextStyles.titleLarge),
         actions: [
           IconButton(
             tooltip: 'Refresh profile',
@@ -227,10 +224,7 @@ class _ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            Text(
-              'Account',
-              style: AppTextStyles.headlineSmall,
-            ),
+            Text('Account', style: AppTextStyles.headlineSmall),
             const SizedBox(height: 12),
             AppCard(
               onTap: () {
@@ -240,10 +234,7 @@ class _ProfileScreen extends StatelessWidget {
                   ),
                 );
               },
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   Icon(
@@ -257,19 +248,67 @@ class _ProfileScreen extends StatelessWidget {
                       style: AppTextStyles.bodyMedium,
                     ),
                   ),
-                  Icon(
-                    Icons.chevron_right,
-                    color: AppColors.onSurfaceVariant,
+                  Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            AppCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.color_lens_outlined,
+                        color: AppColors.onSurface,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Theme: ${themeController.preferenceLabel}',
+                          style: AppTextStyles.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  SegmentedButton<AppThemePreference>(
+                    showSelectedIcon: false,
+                    selected: {themeController.preference},
+                    onSelectionChanged: (selection) {
+                      if (selection.isEmpty) {
+                        return;
+                      }
+
+                      final next = selection.first;
+                      context.read<ThemeController>().setPreference(next);
+                    },
+                    segments: const [
+                      ButtonSegment(
+                        value: AppThemePreference.system,
+                        label: Text('System'),
+                        icon: Icon(Icons.brightness_auto_outlined),
+                      ),
+                      ButtonSegment(
+                        value: AppThemePreference.light,
+                        label: Text('Light'),
+                        icon: Icon(Icons.light_mode_outlined),
+                      ),
+                      ButtonSegment(
+                        value: AppThemePreference.dark,
+                        label: Text('Dark'),
+                        icon: Icon(Icons.dark_mode_outlined),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 8),
             AppCard(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   Icon(
@@ -295,10 +334,7 @@ class _ProfileScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.link_outlined,
-                      color: AppColors.onSurface,
-                    ),
+                    Icon(Icons.link_outlined, color: AppColors.onSurface),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -312,16 +348,10 @@ class _ProfileScreen extends StatelessWidget {
             if (user.profileUrl?.trim().isNotEmpty ?? false)
               const SizedBox(height: 8),
             AppCard(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: AppColors.onSurface,
-                  ),
+                  Icon(Icons.info_outline, color: AppColors.onSurface),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -361,10 +391,7 @@ class _ProfileScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _showEditProfileSheet(
-    BuildContext context,
-    User user,
-  ) async {
+  Future<void> _showEditProfileSheet(BuildContext context, User user) async {
     final result = await showModalBottomSheet<_EditProfileSheetResult>(
       context: context,
       isScrollControlled: true,
@@ -487,10 +514,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Edit Profile',
-                style: AppTextStyles.titleLarge,
-              ),
+              Text('Edit Profile', style: AppTextStyles.titleLarge),
               const SizedBox(height: 14),
               AppInput(
                 label: 'Username',

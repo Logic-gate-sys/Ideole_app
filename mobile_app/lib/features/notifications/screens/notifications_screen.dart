@@ -20,14 +20,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
+    _notifications = _notificationService.getCachedNotifications();
+    _isLoading = _notifications.isEmpty;
     _loadNotifications();
   }
 
   Future<void> _loadNotifications() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    if (_notifications.isEmpty) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    } else {
+      setState(() {
+        _error = null;
+      });
+    }
 
     try {
       final notifications = await _notificationService.getNotifications();
@@ -37,6 +45,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       setState(() {
         _notifications = notifications;
+        _isLoading = false;
       });
     } catch (e) {
       if (!mounted) {
@@ -45,13 +54,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       setState(() {
         _error = e.toString();
+        _isLoading = false;
       });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
 
@@ -62,10 +66,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        title: Text(
-          'Notifications',
-          style: AppTextStyles.titleLarge,
-        ),
+        title: Text('Notifications', style: AppTextStyles.titleLarge),
         actions: [
           IconButton(
             onPressed: _loadNotifications,
@@ -79,9 +80,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
@@ -90,9 +89,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           padding: const EdgeInsets.all(16),
           child: Text(
             _error ?? 'Failed to load notifications.',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.error,
-            ),
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
             textAlign: TextAlign.center,
           ),
         ),
@@ -124,19 +121,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  _iconForType(item.type),
-                  color: AppColors.primary,
-                ),
+                Icon(_iconForType(item.type), color: AppColors.primary),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        item.title,
-                        style: AppTextStyles.labelLarge,
-                      ),
+                      Text(item.title, style: AppTextStyles.labelLarge),
                       const SizedBox(height: 4),
                       Text(
                         item.message,
