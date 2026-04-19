@@ -33,7 +33,9 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     return Consumer<AuthController>(
       builder: (context, authController, _) {
-        if (authController.isLoading && !authController.isAuthenticated) {
+        if (authController.isLoading &&
+            !authController.isAuthenticated &&
+            authController.currentUser == null) {
           return Scaffold(
             backgroundColor: AppColors.surface,
             body: Center(
@@ -54,7 +56,7 @@ class _AppShellState extends State<AppShell> {
           );
         }
 
-        if (!authController.isAuthenticated) {
+        if (!authController.isAuthenticated || authController.currentUser == null) {
           return const SignInScreen();
         }
 
@@ -146,7 +148,7 @@ class _ProfileScreen extends StatelessWidget {
     final user = authController.currentUser;
 
     if (user == null) {
-      return const SizedBox.shrink();
+      return const SignInScreen();
     }
 
     return Scaffold(
@@ -221,11 +223,7 @@ class _ProfileScreen extends StatelessWidget {
               size: AppButtonSize.medium,
               isFullWidth: true,
               icon: Icons.edit_outlined,
-              onPressed: () => _showEditProfileSheet(
-                context,
-                authController,
-                user,
-              ),
+              onPressed: () => _showEditProfileSheet(context, user),
             ),
             const SizedBox(height: 24),
 
@@ -343,18 +341,18 @@ class _ProfileScreen extends StatelessWidget {
               size: AppButtonSize.large,
               isFullWidth: true,
               onPressed: () async {
-                showAppAlertDialog(
+                final shouldLogout = await showAppAlertDialog(
                   context,
                   title: 'Logout?',
                   message: 'Are you sure you want to logout?',
                   positiveLabel: 'Logout',
                   negativeLabel: 'Cancel',
                   type: AlertType.warning,
-                ).then((result) {
-                  if (result == true && context.mounted) {
-                    context.read<AuthController>().logout();
-                  }
-                });
+                );
+
+                if (shouldLogout == true && context.mounted) {
+                  await context.read<AuthController>().logout();
+                }
               },
             ),
           ],
@@ -365,17 +363,9 @@ class _ProfileScreen extends StatelessWidget {
 
   Future<void> _showEditProfileSheet(
     BuildContext context,
-    AuthController authController,
     User user,
   ) async {
-    final formKey = GlobalKey<FormState>();
-    final usernameController = TextEditingController(text: user.username);
-    final emailController = TextEditingController(text: user.email);
-    final profileUrlController = TextEditingController(
-      text: user.profileUrl ?? '',
-    );
-
-    final shouldSave = await showModalBottomSheet<bool>(
+    final result = await showModalBottomSheet<_EditProfileSheetResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
@@ -383,112 +373,195 @@ class _ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 18,
-          ),
-          child: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Edit Profile',
-                    style: AppTextStyles.titleLarge,
-                  ),
-                  const SizedBox(height: 14),
-                  AppInput(
-                    label: 'Username',
-                    hint: 'Enter username',
-                    controller: usernameController,
-                    validator: AuthValidators.validateUsername,
-                  ),
-                  const SizedBox(height: 12),
-                  AppInput(
-                    label: 'Email',
-                    hint: 'you@example.com',
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: AuthValidators.validateEmail,
-                  ),
-                  const SizedBox(height: 12),
-                  AppInput(
-                    label: 'Profile URL (optional)',
-                    hint: 'https://example.com/profile',
-                    controller: profileUrlController,
-                    keyboardType: TextInputType.url,
-                    validator: AuthValidators.validateOptionalUrl,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppButton(
-                          label: 'Cancel',
-                          variant: AppButtonVariant.outlined,
-                          onPressed: () => Navigator.of(sheetContext).pop(false),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: AppButton(
-                          label: 'Save',
-                          variant: AppButtonVariant.filled,
-                          onPressed: () {
-                            if (formKey.currentState?.validate() != true) {
-                              return;
-                            }
-                            Navigator.of(sheetContext).pop(true);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+        return _EditProfileSheet(user: user);
       },
     );
 
-    final updatedUsername = usernameController.text.trim();
-    final updatedEmail = emailController.text.trim();
-    final rawProfileUrl = profileUrlController.text.trim();
-    final updatedProfileUrl = rawProfileUrl.isEmpty ? null : rawProfileUrl;
-
-    usernameController.dispose();
-    emailController.dispose();
-    profileUrlController.dispose();
-
-    if (shouldSave != true) {
+    if (result == null) {
       return;
     }
 
+    // Let the bottom sheet finish its pop animation before notifying listeners.
+    await _waitForFrameStability();
+    if (!context.mounted) {
+      return;
+    }
+
+    final authController = context.read<AuthController>();
+
     final success = await authController.updateProfile(
-      username: updatedUsername,
-      email: updatedEmail,
-      profileUrl: updatedProfileUrl,
+      username: result.username,
+      email: result.email,
+      profileUrl: result.profileUrl,
     );
 
     if (!context.mounted) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success
-              ? 'Profile updated successfully.'
-              : authController.error ?? 'Unable to update profile.',
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Profile updated successfully.'
+                : authController.error ?? 'Unable to update profile.',
+          ),
+          backgroundColor: success ? AppColors.primary : AppColors.error,
         ),
-        backgroundColor: success ? AppColors.primary : AppColors.error,
+      );
+    });
+  }
+
+  Future<void> _waitForFrameStability() async {
+    // Wait for bottom-sheet reverse animation + one more frame so inherited
+    // dependencies are fully detached before controller notifications.
+    await Future<void>.delayed(kThemeAnimationDuration);
+    await WidgetsBinding.instance.endOfFrame;
+    await WidgetsBinding.instance.endOfFrame;
+  }
+}
+
+class _EditProfileSheetResult {
+  final String username;
+  final String email;
+  final String? profileUrl;
+
+  const _EditProfileSheetResult({
+    required this.username,
+    required this.email,
+    required this.profileUrl,
+  });
+}
+
+class _EditProfileSheet extends StatefulWidget {
+  final User user;
+
+  const _EditProfileSheet({required this.user});
+
+  @override
+  State<_EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends State<_EditProfileSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _usernameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _profileUrlController;
+
+  @override
+  void initState() {
+    super.initState();
+    _usernameController = TextEditingController(text: widget.user.username);
+    _emailController = TextEditingController(text: widget.user.email);
+    _profileUrlController = TextEditingController(
+      text: widget.user.profileUrl ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _profileUrlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Edit Profile',
+                style: AppTextStyles.titleLarge,
+              ),
+              const SizedBox(height: 14),
+              AppInput(
+                label: 'Username',
+                hint: 'Enter username',
+                controller: _usernameController,
+                validator: AuthValidators.validateUsername,
+              ),
+              const SizedBox(height: 12),
+              AppInput(
+                label: 'Email',
+                hint: 'you@example.com',
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                validator: AuthValidators.validateEmail,
+              ),
+              const SizedBox(height: 12),
+              AppInput(
+                label: 'Profile URL (optional)',
+                hint: 'https://example.com/profile',
+                controller: _profileUrlController,
+                keyboardType: TextInputType.url,
+                validator: AuthValidators.validateOptionalUrl,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      label: 'Cancel',
+                      variant: AppButtonVariant.outlined,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: AppButton(
+                      label: 'Save',
+                      variant: AppButtonVariant.filled,
+                      onPressed: _handleSave,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  void _handleSave() {
+    if (_formKey.currentState?.validate() != true) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    final rawProfileUrl = _profileUrlController.text.trim();
+    final result = _EditProfileSheetResult(
+      username: _usernameController.text.trim(),
+      email: _emailController.text.trim(),
+      profileUrl: rawProfileUrl.isEmpty ? null : rawProfileUrl,
+    );
+
+    // Defer pop until next frame so focus and input dependencies settle first.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pop(result);
+    });
   }
 }

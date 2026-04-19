@@ -152,18 +152,18 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    isLoading = true;
+    // Switch UI to unauthenticated state immediately to avoid blank/profile races.
     error = null;
+    isLoading = false;
+    currentUser = null;
+    isAuthenticated = false;
     notifyListeners();
 
     try {
       await _authService.logout();
-      currentUser = null;
-      isAuthenticated = false;
     } catch (e) {
+      // Keep user signed out even if server logout fails.
       error = e.toString();
-    } finally {
-      isLoading = false;
       notifyListeners();
     }
   }

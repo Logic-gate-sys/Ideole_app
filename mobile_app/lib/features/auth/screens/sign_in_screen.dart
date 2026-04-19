@@ -101,7 +101,11 @@ class _SignInScreenState extends State<SignInScreen>
                 children: [
                   // Header with animation
                   _buildHeader(),
-                  SizedBox(height: AppSpacing.xxxl),
+                  SizedBox(height: AppSpacing.xl),
+
+                  // App highlights
+                  _buildAppHighlights(),
+                  SizedBox(height: AppSpacing.xxl),
 
                   // Form
                   _buildForm(authController),
@@ -241,6 +245,92 @@ class _SignInScreenState extends State<SignInScreen>
           SizedBox(height: AppSpacing.md),
         ],
       ),
+    );
+  }
+
+  Widget _buildAppHighlights() {
+    return AppCard(
+      padding: EdgeInsets.all(AppSpacing.lg),
+      backgroundColor: AppColors.surfaceContainerLow,
+      borderColor: AppColors.outlineVariant,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Why Ideole?',
+            style: AppTextStyles.titleMedium,
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            'Build better ideas from concept to execution with focused collaboration.',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          _buildHighlightItem(
+            icon: Icons.lightbulb_outline,
+            title: 'Capture and structure ideas',
+            subtitle: 'Define scope, visibility, and evaluation criteria in one flow.',
+          ),
+          SizedBox(height: AppSpacing.sm),
+          _buildHighlightItem(
+            icon: Icons.group_outlined,
+            title: 'Collaborate with the right people',
+            subtitle: 'Invite reviewers, discuss in context, and keep decisions transparent.',
+          ),
+          SizedBox(height: AppSpacing.sm),
+          _buildHighlightItem(
+            icon: Icons.analytics_outlined,
+            title: 'Rate with clarity',
+            subtitle: 'Use shared criteria and ratings to move ideas forward confidently.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHighlightItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.primaryContainer,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: AppColors.primary,
+          ),
+        ),
+        SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.labelLarge,
+              ),
+              SizedBox(height: AppSpacing.xs),
+              Text(
+                subtitle,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

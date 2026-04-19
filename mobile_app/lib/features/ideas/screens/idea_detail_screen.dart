@@ -1138,13 +1138,7 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
   }
 
   Future<void> _showEditIdeaSheet(Idea idea) async {
-    final titleController = TextEditingController(text: idea.title);
-    final descriptionController = TextEditingController(text: idea.description);
-
-    IdeaVisibility selectedVisibility = idea.visibility;
-    IdeaStage selectedStage = idea.stage;
-
-    final saved = await showModalBottomSheet<bool>(
+    final result = await showModalBottomSheet<_EditIdeaSheetResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
@@ -1152,127 +1146,26 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 18,
-          ),
-          child: StatefulBuilder(
-            builder: (context, setModalState) {
-              return SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Edit Idea', style: AppTextStyles.titleLarge),
-                    const SizedBox(height: 14),
-                    AppInput(
-                      label: 'Title',
-                      hint: 'Idea title',
-                      controller: titleController,
-                      maxLength: 200,
-                      showCounter: true,
-                    ),
-                    const SizedBox(height: 12),
-                    AppInput(
-                      label: 'Description',
-                      hint: 'Idea description',
-                      controller: descriptionController,
-                      maxLines: 5,
-                      maxLength: 5000,
-                      showCounter: true,
-                    ),
-                    const SizedBox(height: 14),
-                    Text('Visibility', style: AppTextStyles.labelLarge),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: IdeaVisibility.values.map((visibility) {
-                        return ChoiceChip(
-                          label: Text(visibilityToString(visibility)),
-                          selected: selectedVisibility == visibility,
-                          onSelected: (selected) {
-                            if (!selected) {
-                              return;
-                            }
-                            setModalState(() {
-                              selectedVisibility = visibility;
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 14),
-                    Text('Stage', style: AppTextStyles.labelLarge),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: IdeaStage.values.map((stage) {
-                        return ChoiceChip(
-                          label: Text(stageToString(stage)),
-                          selected: selectedStage == stage,
-                          onSelected: (selected) {
-                            if (!selected) {
-                              return;
-                            }
-                            setModalState(() {
-                              selectedStage = stage;
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppButton(
-                            label: 'Cancel',
-                            variant: AppButtonVariant.outlined,
-                            onPressed: () =>
-                                Navigator.of(sheetContext).pop(false),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: AppButton(
-                            label: 'Save',
-                            variant: AppButtonVariant.filled,
-                            onPressed: () =>
-                                Navigator.of(sheetContext).pop(true),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        );
+        return _EditIdeaSheet(idea: idea);
       },
     );
 
-    final updatedTitle = titleController.text.trim();
-    final updatedDescription = descriptionController.text.trim();
-    titleController.dispose();
-    descriptionController.dispose();
+    if (result == null || !mounted) {
+      return;
+    }
 
-    if (saved != true || !mounted) {
+    await _waitForFrameStability();
+    if (!mounted) {
       return;
     }
 
     final controller = context.read<IdeaController>();
     final success = await controller.updateIdea(
       idea.id,
-      title: updatedTitle,
-      description: updatedDescription,
-      visibility: selectedVisibility,
-      stage: selectedStage,
+      title: result.title,
+      description: result.description,
+      visibility: result.visibility,
+      stage: result.stage,
     );
 
     if (!mounted) {
@@ -1458,12 +1351,6 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
     String? initialName,
     String? initialDescription,
   }) async {
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(text: initialName ?? '');
-    final descriptionController = TextEditingController(
-      text: initialDescription ?? '',
-    );
-
     final result = await showModalBottomSheet<_CriteriaDialogResult>(
       context: context,
       isScrollControlled: true,
@@ -1472,103 +1359,13 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 18,
-          ),
-          child: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    initialName == null ? 'Add Criteria' : 'Edit Criteria',
-                    style: AppTextStyles.titleLarge,
-                  ),
-                  const SizedBox(height: 14),
-                  AppInput(
-                    label: 'Criteria Name',
-                    hint: 'e.g. Feasibility',
-                    controller: nameController,
-                    maxLength: 100,
-                    showCounter: true,
-                    textCapitalization: TextCapitalization.sentences,
-                    validator: (value) {
-                      final name = value?.trim() ?? '';
-                      if (name.length < 2) {
-                        return 'Name must be at least 2 characters';
-                      }
-                      return null;
-                    },
-                    textInputAction: TextInputAction.next,
-                    onEditingComplete: () {
-                      FocusScope.of(sheetContext).nextFocus();
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  AppInput(
-                    label: 'Description',
-                    hint: 'Describe how this criterion should be assessed',
-                    controller: descriptionController,
-                    maxLength: 500,
-                    showCounter: true,
-                    maxLines: 4,
-                    textCapitalization: TextCapitalization.sentences,
-                    validator: (value) {
-                      final description = value?.trim() ?? '';
-                      if (description.length < 5) {
-                        return 'Description must be at least 5 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppButton(
-                          label: 'Cancel',
-                          variant: AppButtonVariant.outlined,
-                          onPressed: () => Navigator.of(sheetContext).pop(),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: AppButton(
-                          label: 'Save',
-                          variant: AppButtonVariant.filled,
-                          onPressed: () {
-                            if (formKey.currentState?.validate() != true) {
-                              return;
-                            }
-
-                            FocusScope.of(sheetContext).unfocus();
-                            Navigator.of(sheetContext).pop(
-                              _CriteriaDialogResult(
-                                name: nameController.text.trim(),
-                                description: descriptionController.text.trim(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+        return _CriteriaEditorSheet(
+          initialName: initialName,
+          initialDescription: initialDescription,
         );
       },
     );
 
-    nameController.dispose();
-    descriptionController.dispose();
     return result;
   }
 
@@ -1658,4 +1455,298 @@ class _CriteriaDialogResult {
   final String description;
 
   const _CriteriaDialogResult({required this.name, required this.description});
+}
+
+class _EditIdeaSheetResult {
+  final String title;
+  final String description;
+  final IdeaVisibility visibility;
+  final IdeaStage stage;
+
+  const _EditIdeaSheetResult({
+    required this.title,
+    required this.description,
+    required this.visibility,
+    required this.stage,
+  });
+}
+
+class _EditIdeaSheet extends StatefulWidget {
+  final Idea idea;
+
+  const _EditIdeaSheet({required this.idea});
+
+  @override
+  State<_EditIdeaSheet> createState() => _EditIdeaSheetState();
+}
+
+class _EditIdeaSheetState extends State<_EditIdeaSheet> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  late IdeaVisibility _selectedVisibility;
+  late IdeaStage _selectedStage;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.idea.title);
+    _descriptionController = TextEditingController(
+      text: widget.idea.description,
+    );
+    _selectedVisibility = widget.idea.visibility;
+    _selectedStage = widget.idea.stage;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Edit Idea', style: AppTextStyles.titleLarge),
+            const SizedBox(height: 14),
+            AppInput(
+              label: 'Title',
+              hint: 'Idea title',
+              controller: _titleController,
+              maxLength: 200,
+              showCounter: true,
+            ),
+            const SizedBox(height: 12),
+            AppInput(
+              label: 'Description',
+              hint: 'Idea description',
+              controller: _descriptionController,
+              maxLines: 5,
+              maxLength: 5000,
+              showCounter: true,
+            ),
+            const SizedBox(height: 14),
+            Text('Visibility', style: AppTextStyles.labelLarge),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: IdeaVisibility.values.map((visibility) {
+                return ChoiceChip(
+                  label: Text(visibilityToString(visibility)),
+                  selected: _selectedVisibility == visibility,
+                  onSelected: (selected) {
+                    if (!selected) {
+                      return;
+                    }
+                    setState(() {
+                      _selectedVisibility = visibility;
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 14),
+            Text('Stage', style: AppTextStyles.labelLarge),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: IdeaStage.values.map((stage) {
+                return ChoiceChip(
+                  label: Text(stageToString(stage)),
+                  selected: _selectedStage == stage,
+                  onSelected: (selected) {
+                    if (!selected) {
+                      return;
+                    }
+                    setState(() {
+                      _selectedStage = stage;
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: AppButton(
+                    label: 'Cancel',
+                    variant: AppButtonVariant.outlined,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: AppButton(
+                    label: 'Save',
+                    variant: AppButtonVariant.filled,
+                    onPressed: _handleSave,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleSave() {
+    FocusScope.of(context).unfocus();
+
+    Navigator.of(context).pop(
+      _EditIdeaSheetResult(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        visibility: _selectedVisibility,
+        stage: _selectedStage,
+      ),
+    );
+  }
+}
+
+class _CriteriaEditorSheet extends StatefulWidget {
+  final String? initialName;
+  final String? initialDescription;
+
+  const _CriteriaEditorSheet({
+    this.initialName,
+    this.initialDescription,
+  });
+
+  @override
+  State<_CriteriaEditorSheet> createState() => _CriteriaEditorSheetState();
+}
+
+class _CriteriaEditorSheetState extends State<_CriteriaEditorSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName ?? '');
+    _descriptionController = TextEditingController(
+      text: widget.initialDescription ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.initialName == null ? 'Add Criteria' : 'Edit Criteria',
+                style: AppTextStyles.titleLarge,
+              ),
+              const SizedBox(height: 14),
+              AppInput(
+                label: 'Criteria Name',
+                hint: 'e.g. Feasibility',
+                controller: _nameController,
+                maxLength: 100,
+                showCounter: true,
+                textCapitalization: TextCapitalization.sentences,
+                validator: (value) {
+                  final name = value?.trim() ?? '';
+                  if (name.length < 2) {
+                    return 'Name must be at least 2 characters';
+                  }
+                  return null;
+                },
+                textInputAction: TextInputAction.next,
+                onEditingComplete: () {
+                  FocusScope.of(context).nextFocus();
+                },
+              ),
+              const SizedBox(height: 12),
+              AppInput(
+                label: 'Description',
+                hint: 'Describe how this criterion should be assessed',
+                controller: _descriptionController,
+                maxLength: 500,
+                showCounter: true,
+                maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
+                validator: (value) {
+                  final description = value?.trim() ?? '';
+                  if (description.length < 5) {
+                    return 'Description must be at least 5 characters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      label: 'Cancel',
+                      variant: AppButtonVariant.outlined,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: AppButton(
+                      label: 'Save',
+                      variant: AppButtonVariant.filled,
+                      onPressed: _handleSave,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleSave() {
+    if (_formKey.currentState?.validate() != true) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    Navigator.of(context).pop(
+      _CriteriaDialogResult(
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+      ),
+    );
+  }
 }
