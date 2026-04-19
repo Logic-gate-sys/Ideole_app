@@ -77,6 +77,7 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen>
             // Header section
             SliverAppBar(
               backgroundColor: AppColors.surface,
+              toolbarHeight: 0,
               collapsedHeight: 0,
               expandedHeight: 200,
               floating: false,

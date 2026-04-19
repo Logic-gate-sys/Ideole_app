@@ -12,6 +12,7 @@ class AppScrollBehavior extends MaterialScrollBehavior {
   Set<PointerDeviceKind> get dragDevices => const {
     PointerDeviceKind.touch,
     PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
     PointerDeviceKind.stylus,
     PointerDeviceKind.invertedStylus,
     PointerDeviceKind.unknown,

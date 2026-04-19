@@ -96,6 +96,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
                 slivers: [
                   SliverAppBar(
                     backgroundColor: AppColors.surface,
+                    toolbarHeight: 0,
                     collapsedHeight: 0,
                     expandedHeight: 220,
                     floating: false,
