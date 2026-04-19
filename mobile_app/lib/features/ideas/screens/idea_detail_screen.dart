@@ -151,6 +151,10 @@ class _IdeaDetailScreenState extends State<IdeaDetailScreen> {
 
     return SingleChildScrollView(
       controller: _scrollController,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
       padding: EdgeInsets.fromLTRB(
         20,
         20,
@@ -1622,10 +1626,7 @@ class _CriteriaEditorSheet extends StatefulWidget {
   final String? initialName;
   final String? initialDescription;
 
-  const _CriteriaEditorSheet({
-    this.initialName,
-    this.initialDescription,
-  });
+  const _CriteriaEditorSheet({this.initialName, this.initialDescription});
 
   @override
   State<_CriteriaEditorSheet> createState() => _CriteriaEditorSheetState();

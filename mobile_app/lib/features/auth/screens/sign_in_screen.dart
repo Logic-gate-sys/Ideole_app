@@ -20,7 +20,6 @@ class _SignInScreenState extends State<SignInScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   late AnimationController _animationController;
-  bool _showPassword = false;
 
   @override
   void initState() {
@@ -77,11 +76,9 @@ class _SignInScreenState extends State<SignInScreen>
   }
 
   void _handleSignUpNavigation() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const SignUpScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const SignUpScreen()));
   }
 
   @override
@@ -101,15 +98,15 @@ class _SignInScreenState extends State<SignInScreen>
                 children: [
                   // Header with animation
                   _buildHeader(),
-                  SizedBox(height: AppSpacing.xl),
+                  SizedBox(height: AppSpacing.lg),
 
-                  // App highlights
-                  _buildAppHighlights(),
-                  SizedBox(height: AppSpacing.xxl),
+                  // Compact app highlights
+                  _buildQuickHighlights(),
+                  SizedBox(height: AppSpacing.xl),
 
                   // Form
                   _buildForm(authController),
-                  SizedBox(height: AppSpacing.xxxl),
+                  SizedBox(height: AppSpacing.xl),
 
                   // Sign In Button
                   AppButton(
@@ -118,10 +115,9 @@ class _SignInScreenState extends State<SignInScreen>
                     size: AppButtonSize.large,
                     isFullWidth: true,
                     isLoading: authController.isLoading,
-                    onPressed:
-                        authController.isLoading ? null : _handleSignIn,
+                    onPressed: authController.isLoading ? null : _handleSignIn,
                   ),
-                  SizedBox(height: AppSpacing.xxxl),
+                  SizedBox(height: AppSpacing.lg),
 
                   // Sign Up Link
                   _buildSignUpPrompt(),
@@ -135,30 +131,31 @@ class _SignInScreenState extends State<SignInScreen>
   }
 
   Widget _buildHeader() {
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(0, -0.3),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-      ),
-      child: Opacity(
-        opacity: _animationController.value,
+    final animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    );
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, -0.2),
+          end: Offset.zero,
+        ).animate(animation),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Welcome Back',
-              style: AppTextStyles.displayLarge.copyWith(
-                height: 1.2,
-              ),
+              'Welcome back',
+              style: AppTextStyles.displayLarge.copyWith(height: 1.15),
             ),
-            SizedBox(height: AppSpacing.sm),
+            SizedBox(height: AppSpacing.xs),
             Text(
-              'Sign in to your Ideole account to continue exploring and collaborating',
+              'Sign in to continue.',
               style: AppTextStyles.bodyLarge.copyWith(
                 color: AppColors.onSurfaceVariant,
-                height: 1.5,
+                height: 1.35,
               ),
             ),
           ],
@@ -209,9 +206,13 @@ class _SignInScreenState extends State<SignInScreen>
 
           // Email field
           AppInput(
-            label: 'Email Address',
+            label: 'Email',
             hint: 'you@example.com',
             keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            onEditingComplete: () {
+              FocusScope.of(context).nextFocus();
+            },
             controller: _emailController,
             validator: AuthValidators.validateEmail,
           ),
@@ -220,8 +221,10 @@ class _SignInScreenState extends State<SignInScreen>
           // Password field with toggle
           AppInput(
             label: 'Password',
-            hint: 'Enter your password',
-            obscureText: !_showPassword,
+            hint: 'Your password',
+            obscureText: true,
+            textInputAction: TextInputAction.done,
+            onEditingComplete: _handleSignIn,
             controller: _passwordController,
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -229,18 +232,6 @@ class _SignInScreenState extends State<SignInScreen>
               }
               return null;
             },
-            suffixIcon: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showPassword = !_showPassword;
-                });
-              },
-              child: Icon(
-                _showPassword ? Icons.visibility : Icons.visibility_off,
-                color: AppColors.onSurfaceVariant,
-                size: 20,
-              ),
-            ),
           ),
           SizedBox(height: AppSpacing.md),
         ],
@@ -248,89 +239,42 @@ class _SignInScreenState extends State<SignInScreen>
     );
   }
 
-  Widget _buildAppHighlights() {
-    return AppCard(
-      padding: EdgeInsets.all(AppSpacing.lg),
-      backgroundColor: AppColors.surfaceContainerLow,
-      borderColor: AppColors.outlineVariant,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Why Ideole?',
-            style: AppTextStyles.titleMedium,
-          ),
-          SizedBox(height: AppSpacing.xs),
-          Text(
-            'Build better ideas from concept to execution with focused collaboration.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: AppSpacing.md),
-          _buildHighlightItem(
-            icon: Icons.lightbulb_outline,
-            title: 'Capture and structure ideas',
-            subtitle: 'Define scope, visibility, and evaluation criteria in one flow.',
-          ),
-          SizedBox(height: AppSpacing.sm),
-          _buildHighlightItem(
-            icon: Icons.group_outlined,
-            title: 'Collaborate with the right people',
-            subtitle: 'Invite reviewers, discuss in context, and keep decisions transparent.',
-          ),
-          SizedBox(height: AppSpacing.sm),
-          _buildHighlightItem(
-            icon: Icons.analytics_outlined,
-            title: 'Rate with clarity',
-            subtitle: 'Use shared criteria and ratings to move ideas forward confidently.',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHighlightItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildQuickHighlights() {
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
       children: [
-        Container(
-          padding: EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: AppColors.primaryContainer,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: AppColors.primary,
-          ),
-        ),
-        SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AppTextStyles.labelLarge,
-              ),
-              SizedBox(height: AppSpacing.xs),
-              Text(
-                subtitle,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildHighlightChip(Icons.lightbulb_outline, 'Ideas'),
+        _buildHighlightChip(Icons.group_outlined, 'Teams'),
+        _buildHighlightChip(Icons.analytics_outlined, 'Ratings'),
       ],
+    );
+  }
+
+  Widget _buildHighlightChip(IconData icon, String label) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: AppColors.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.primary),
+          SizedBox(width: AppSpacing.xs),
+          Text(
+            label,
+            style: AppTextStyles.labelMedium.copyWith(
+              color: AppColors.onSurface,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -338,11 +282,9 @@ class _SignInScreenState extends State<SignInScreen>
     return Center(
       child: RichText(
         text: TextSpan(
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.onSurface,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.onSurface),
           children: [
-            const TextSpan(text: 'Don\'t have an account? '),
+            const TextSpan(text: 'New to Ideole? '),
             TextSpan(
               text: 'Sign up',
               style: AppTextStyles.bodyMedium.copyWith(

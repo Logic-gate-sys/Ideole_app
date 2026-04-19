@@ -1,11 +1,19 @@
 import type { Request, Response } from 'express';
 import { ConversationService } from '../services/conversation.service.ts';
+import { emitConversationMessageCreated } from '../lib/socket.ts';
 
 export const ConversationControllers = {
   async getIdeaConversation(req: Request, res: Response) {
     try {
       const ideaId = req.params.ideaId as string;
       const userId = req.user?.id;
+
+      if (!ideaId || !ideaId.trim()) {
+        return res.status(400).json({
+          message: 'error',
+          details: 'ideaId is required',
+        });
+      }
 
       if (!userId) {
         return res.status(401).json({
@@ -46,6 +54,13 @@ export const ConversationControllers = {
     try {
       const ideaId = req.params.ideaId as string;
       const userId = req.user?.id;
+
+      if (!ideaId || !ideaId.trim()) {
+        return res.status(400).json({
+          message: 'error',
+          details: 'ideaId is required',
+        });
+      }
 
       if (!userId) {
         return res.status(401).json({
@@ -150,6 +165,8 @@ export const ConversationControllers = {
         userId,
         content
       );
+
+      emitConversationMessageCreated(conversationId, message);
 
       return res.status(201).json({
         success: true,

@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { CommentService } from '../services/comment.service.ts';
+import { emitCommentCreated, emitCommentDeleted } from '../lib/socket.ts';
 
 export const CommentControllers = {
   async createComment(req: Request, res: Response) {
@@ -16,6 +17,8 @@ export const CommentControllers = {
       }
 
       const comment = await CommentService.createComment(ideaId, userId, content);
+
+      emitCommentCreated(ideaId, comment);
 
       return res.status(201).json({
         success: true,
@@ -98,6 +101,8 @@ export const CommentControllers = {
         userId,
         userRole
       );
+
+      emitCommentDeleted(ideaId, commentId);
 
       return res.status(200).json({
         success: true,

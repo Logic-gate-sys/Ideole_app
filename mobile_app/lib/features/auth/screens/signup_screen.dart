@@ -23,8 +23,6 @@ class _SignUpScreenState extends State<SignUpScreen>
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   late AnimationController _animationController;
-  bool _showPassword = false;
-  bool _showConfirmPassword = false;
   bool _agreedToTerms = false;
 
   @override
@@ -59,8 +57,7 @@ class _SignUpScreenState extends State<SignUpScreen>
         SnackBar(
           content: Text(
             'You must agree to the Terms of Service',
-            style:
-                AppTextStyles.bodyMedium.copyWith(color: AppColors.onError),
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.onError),
           ),
           backgroundColor: AppColors.error,
         ),
@@ -88,8 +85,9 @@ class _SignUpScreenState extends State<SignUpScreen>
           SnackBar(
             content: Text(
               e.toString().replaceFirst('Exception: ', ''),
-              style:
-                  AppTextStyles.bodyMedium.copyWith(color: AppColors.onError),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.onError,
+              ),
             ),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
@@ -129,10 +127,10 @@ class _SignUpScreenState extends State<SignUpScreen>
                 children: [
                   // Header with animation
                   _buildHeader(),
-                  SizedBox(height: AppSpacing.xxxl),
+                  SizedBox(height: AppSpacing.xl),
 
                   // Form
-                  _buildForm(),
+                  _buildForm(authController),
                   SizedBox(height: AppSpacing.lg),
 
                   // Terms checkbox
@@ -146,8 +144,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                     size: AppButtonSize.large,
                     isFullWidth: true,
                     isLoading: authController.isLoading,
-                    onPressed:
-                        authController.isLoading ? null : _handleSignUp,
+                    onPressed: authController.isLoading ? null : _handleSignUp,
                   ),
                   SizedBox(height: AppSpacing.lg),
 
@@ -163,28 +160,28 @@ class _SignUpScreenState extends State<SignUpScreen>
   }
 
   Widget _buildHeader() {
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(0, -0.3),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-      ),
-      child: Opacity(
-        opacity: _animationController.value,
+    final animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    );
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, -0.2),
+          end: Offset.zero,
+        ).animate(animation),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text('Create your account', style: AppTextStyles.displayLarge),
+            SizedBox(height: AppSpacing.xs),
             Text(
-              'Create Account',
-              style: AppTextStyles.displayLarge,
-            ),
-            SizedBox(height: AppSpacing.sm),
-            Text(
-              'Join Ideole and start exploring innovative ideas',
+              'Set up your Ideole profile in under a minute.',
               style: AppTextStyles.bodyLarge.copyWith(
                 color: AppColors.onSurfaceVariant,
-                height: 1.5,
+                height: 1.35,
               ),
             ),
           ],
@@ -193,105 +190,163 @@ class _SignUpScreenState extends State<SignUpScreen>
     );
   }
 
-  Widget _buildForm() {
+  Widget _buildForm(AuthController authController) {
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // First Name
-          AppInput(
-            label: 'First Name',
-            hint: 'Enter your first name',
-            controller: _firstNameController,
-            keyboardType: TextInputType.name,
-            validator: AuthValidators.validateName,
-          ),
-          SizedBox(height: AppSpacing.lg),
+          if (authController.error != null) ...[
+            _buildErrorBanner(authController.error!),
+            SizedBox(height: AppSpacing.lg),
+          ],
 
-          // Last Name
-          AppInput(
-            label: 'Last Name',
-            hint: 'Enter your last name',
-            controller: _lastNameController,
-            keyboardType: TextInputType.name,
-            validator: AuthValidators.validateName,
-          ),
-          SizedBox(height: AppSpacing.lg),
-
-          // Username
-          AppInput(
-            label: 'Username',
-            hint: 'Choose a unique username',
-            controller: _usernameController,
-            keyboardType: TextInputType.text,
-            validator: AuthValidators.validateUsername,
-          ),
-          SizedBox(height: AppSpacing.lg),
-
-          // Email
-          AppInput(
-            label: 'Email Address',
-            hint: 'you@example.com',
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            validator: AuthValidators.validateEmail,
-          ),
-          SizedBox(height: AppSpacing.lg),
-
-          // Password with strength indicator
-          AppInput(
-            label: 'Password',
-            hint: 'Create a strong password',
-            obscureText: !_showPassword,
-            controller: _passwordController,
-            suffixIcon: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showPassword = !_showPassword;
-                });
-              },
-              child: Icon(
-                _showPassword ? Icons.visibility : Icons.visibility_off,
-                color: AppColors.onSurfaceVariant,
-                size: 20,
-              ),
+          AppCard(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionHeader(
+                  title: 'Personal info',
+                  subtitle: 'How people will see you.',
+                ),
+                SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppInput(
+                        label: 'First name',
+                        hint: 'First name',
+                        controller: _firstNameController,
+                        keyboardType: TextInputType.name,
+                        textInputAction: TextInputAction.next,
+                        validator: AuthValidators.validateName,
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: AppInput(
+                        label: 'Last name',
+                        hint: 'Last name',
+                        controller: _lastNameController,
+                        keyboardType: TextInputType.name,
+                        textInputAction: TextInputAction.next,
+                        validator: AuthValidators.validateName,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: AppSpacing.md),
+                AppInput(
+                  label: 'Username',
+                  hint: 'Choose a username',
+                  controller: _usernameController,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
+                  validator: AuthValidators.validateUsername,
+                ),
+                SizedBox(height: AppSpacing.md),
+                AppInput(
+                  label: 'Email',
+                  hint: 'you@example.com',
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  validator: AuthValidators.validateEmail,
+                ),
+              ],
             ),
-            validator: AuthValidators.validatePassword,
           ),
-          SizedBox(height: AppSpacing.md),
-
-          // Password strength indicator
-          _buildPasswordStrengthIndicator(),
           SizedBox(height: AppSpacing.lg),
 
-          // Confirm Password
-          AppInput(
-            label: 'Confirm Password',
-            hint: 'Re-enter your password',
-            obscureText: !_showConfirmPassword,
-            controller: _confirmPasswordController,
-            suffixIcon: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showConfirmPassword = !_showConfirmPassword;
-                });
-              },
-              child: Icon(
-                _showConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                color: AppColors.onSurfaceVariant,
-                size: 20,
-              ),
+          AppCard(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionHeader(
+                  title: 'Security',
+                  subtitle: 'Keep your account protected.',
+                ),
+                SizedBox(height: AppSpacing.md),
+                AppInput(
+                  label: 'Password',
+                  hint: 'At least 8 characters',
+                  obscureText: true,
+                  controller: _passwordController,
+                  textInputAction: TextInputAction.next,
+                  onChanged: (_) {
+                    setState(() {});
+                  },
+                  validator: AuthValidators.validatePassword,
+                ),
+                SizedBox(height: AppSpacing.md),
+                _buildPasswordStrengthIndicator(),
+                SizedBox(height: AppSpacing.md),
+                AppInput(
+                  label: 'Confirm password',
+                  hint: 'Type password again',
+                  obscureText: true,
+                  controller: _confirmPasswordController,
+                  textInputAction: TextInputAction.done,
+                  onEditingComplete: _handleSignUp,
+                  validator: (value) {
+                    return AuthValidators.validateConfirmPassword(
+                      value,
+                      _passwordController.text,
+                    );
+                  },
+                ),
+              ],
             ),
-            validator: (value) {
-              return AuthValidators.validateConfirmPassword(
-                value,
-                _passwordController.text,
-              );
-            },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildErrorBanner(String message) {
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.errorContainer,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: AppColors.error.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, color: AppColors.error, size: 20),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String title,
+    required String subtitle,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AppTextStyles.titleMedium),
+        SizedBox(height: AppSpacing.xs),
+        Text(
+          subtitle,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 
@@ -324,7 +379,7 @@ class _SignUpScreenState extends State<SignUpScreen>
         Row(
           children: [
             Text(
-              'Password strength: ',
+              'Strength: ',
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
@@ -384,7 +439,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                 children: [
                   const TextSpan(text: 'I agree to the '),
                   TextSpan(
-                    text: 'Terms of Service',
+                    text: 'Terms',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
@@ -411,9 +466,7 @@ class _SignUpScreenState extends State<SignUpScreen>
     return Center(
       child: RichText(
         text: TextSpan(
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.onSurface,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.onSurface),
           children: [
             const TextSpan(text: 'Already have an account? '),
             TextSpan(

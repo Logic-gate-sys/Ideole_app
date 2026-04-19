@@ -7,7 +7,8 @@ class CommentController extends ChangeNotifier {
   final CommentService _commentService = CommentService();
 
   // State properties
-  final Map<String, List<Comment>> _ideaComments = {}; // ideaId -> list of comments
+  final Map<String, List<Comment>> _ideaComments =
+      {}; // ideaId -> list of comments
   bool _isLoading = false;
   String? _error;
   String? _successMessage;
@@ -36,10 +37,18 @@ class CommentController extends ChangeNotifier {
 
   /// Load comments for an idea
   /// Called when viewing idea details to display discussion
-  Future<void> loadComments(String ideaId, {int page = 1}) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+  Future<void> loadComments(
+    String ideaId, {
+    int page = 1,
+    bool silent = false,
+  }) async {
+    if (!silent) {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+    } else {
+      _error = null;
+    }
 
     try {
       final comments = await _commentService.getIdeaComments(
@@ -49,15 +58,12 @@ class CommentController extends ChangeNotifier {
       );
 
       if (page == 1) {
-        // First page, replace all
-        _ideaComments[ideaId] = comments;
+        // First page, replace all in chronological order (oldest -> newest).
+        _ideaComments[ideaId] = _mergeAndSortComments(const [], comments);
       } else {
-        // Additional page, append to existing
-        if (_ideaComments[ideaId] == null) {
-          _ideaComments[ideaId] = comments;
-        } else {
-          _ideaComments[ideaId]!.addAll(comments);
-        }
+        // Additional pages are merged and de-duplicated.
+        final existing = _ideaComments[ideaId] ?? const <Comment>[];
+        _ideaComments[ideaId] = _mergeAndSortComments(existing, comments);
       }
 
       _currentPageMap[ideaId] = page;
@@ -73,7 +79,9 @@ class CommentController extends ChangeNotifier {
         _ideaComments[ideaId] = [];
       }
     } finally {
-      _isLoading = false;
+      if (!silent) {
+        _isLoading = false;
+      }
       notifyListeners();
     }
   }
@@ -82,6 +90,11 @@ class CommentController extends ChangeNotifier {
   Future<void> refreshComments(String ideaId) async {
     _currentPageMap[ideaId] = 1;
     await loadComments(ideaId, page: 1);
+  }
+
+  /// Silent refresh used by realtime sync to avoid loading-state flicker.
+  Future<void> syncComments(String ideaId) async {
+    await loadComments(ideaId, page: 1, silent: true);
   }
 
   /// Load next page of comments
@@ -126,12 +139,8 @@ class CommentController extends ChangeNotifier {
         text: text.trim(),
       );
 
-      // Add to comments list at the beginning (most recent first)
-      if (_ideaComments[ideaId] == null) {
-        _ideaComments[ideaId] = [comment];
-      } else {
-        _ideaComments[ideaId]!.insert(0, comment);
-      }
+      final existing = _ideaComments[ideaId] ?? const <Comment>[];
+      _ideaComments[ideaId] = _mergeAndSortComments(existing, [comment]);
 
       _successMessage = 'Comment posted!';
       _error = null;
@@ -151,6 +160,24 @@ class CommentController extends ChangeNotifier {
     }
   }
 
+  /// Upsert a comment from realtime events.
+  void upsertCommentRealtime(String ideaId, Comment comment) {
+    final existing = _ideaComments[ideaId] ?? const <Comment>[];
+    _ideaComments[ideaId] = _mergeAndSortComments(existing, [comment]);
+    notifyListeners();
+  }
+
+  /// Remove a comment from realtime delete events.
+  void removeCommentRealtime(String ideaId, String commentId) {
+    final comments = _ideaComments[ideaId];
+    if (comments == null) {
+      return;
+    }
+
+    comments.removeWhere((comment) => comment.id == commentId);
+    notifyListeners();
+  }
+
   // ============================================================
   // Delete Comment Methods
   // ============================================================
@@ -168,10 +195,7 @@ class CommentController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _commentService.deleteComment(
-        ideaId: ideaId,
-        commentId: commentId,
-      );
+      await _commentService.deleteComment(ideaId: ideaId, commentId: commentId);
 
       // Remove from comments list
       if (_ideaComments[ideaId] != null) {
@@ -246,5 +270,35 @@ class CommentController extends ChangeNotifier {
     _error = null;
     _successMessage = null;
     notifyListeners();
+  }
+
+  List<Comment> _mergeAndSortComments(
+    List<Comment> existing,
+    List<Comment> incoming,
+  ) {
+    final byId = <String, Comment>{};
+    for (final comment in [...existing, ...incoming]) {
+      byId[_commentIdentity(comment)] = comment;
+    }
+
+    final merged = byId.values.toList()
+      ..sort((a, b) {
+        final dateComparison = a.createdAt.compareTo(b.createdAt);
+        if (dateComparison != 0) {
+          return dateComparison;
+        }
+
+        return a.id.compareTo(b.id);
+      });
+
+    return merged;
+  }
+
+  String _commentIdentity(Comment comment) {
+    if (comment.id.isNotEmpty) {
+      return comment.id;
+    }
+
+    return '${comment.userId}_${comment.createdAt.microsecondsSinceEpoch}_${comment.content.hashCode}';
   }
 }

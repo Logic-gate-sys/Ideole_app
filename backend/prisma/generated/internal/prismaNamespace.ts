@@ -1384,6 +1384,7 @@ export const ConversationScalarFieldEnum = {
   contextId: 'contextId',
   contextType: 'contextType',
   createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
   ideaId: 'ideaId'
 } as const
 
