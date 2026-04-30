@@ -11,5 +11,6 @@ export 'app_dialog.dart';
 
 // Theme exports
 export '../theme/app_colors.dart';
+export '../theme/app_scroll_behavior.dart';
 export '../theme/app_text_styles.dart';
 export '../theme/app_theme.dart';

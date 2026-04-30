@@ -25,16 +25,38 @@ export const AuthService = {
 
     // Hash password
     const passwordHash = await hashPassword(input.password);
-    // Create user
-    return  await prisma.user.create({
-      data: {
-        username: input.username,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        email: input.email,
-        passwordHash:passwordHash,
-      },
-    });
+      // Create user
+      try {
+        return await prisma.user.create({
+          data: {
+            username: input.username,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            passwordHash: passwordHash,
+          },
+        });
+      } catch (error: any) {
+        // Handle race conditions where uniqueness can fail between pre-checks and create.
+        if (error?.code === 'P2002') {
+          const target = error?.meta?.target;
+          const targetText = Array.isArray(target)
+            ? target.join(',')
+            : String(target ?? '');
+
+          if (targetText.includes('email')) {
+            throw new Error('Email already registered');
+          }
+
+          if (targetText.includes('username')) {
+            throw new Error('Username already taken');
+          }
+
+          throw new Error('Account already exists');
+        }
+
+        throw error;
+      }
   },
 
   //login

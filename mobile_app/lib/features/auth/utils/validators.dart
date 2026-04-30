@@ -86,6 +86,28 @@ class AuthValidators {
     return null;
   }
 
+  /// Validate username
+  static String? validateUsername(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Username is required';
+    }
+
+    final username = value.trim();
+    if (username.length < 3) {
+      return 'Username must be at least 3 characters';
+    }
+
+    if (username.length > 30) {
+      return 'Username must be 30 characters or less';
+    }
+
+    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(username)) {
+      return 'Username can use letters, numbers, and _ only';
+    }
+
+    return null;
+  }
+
   /// Validate confirm password matches
   static String? validateConfirmPassword(String? value, String? password) {
     if (value == null || value.isEmpty) {
@@ -104,6 +126,23 @@ class AuthValidators {
     if (value == null || value.isEmpty) {
       return '$fieldName is required';
     }
+    return null;
+  }
+
+  /// Validate optional URL field.
+  static String? validateOptionalUrl(String? value) {
+    final input = value?.trim() ?? '';
+    if (input.isEmpty) {
+      return null;
+    }
+
+    final uri = Uri.tryParse(input);
+    if (uri == null ||
+        !(uri.isScheme('http') || uri.isScheme('https')) ||
+        (uri.host.isEmpty)) {
+      return 'Please enter a valid URL (http or https)';
+    }
+
     return null;
   }
 }

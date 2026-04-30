@@ -214,6 +214,7 @@ model Conversation {
   contextId   String
   contextType ContextType
   createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   messages Message[]
   idea     Idea?     @relation(fields: [ideaId], references: [id])

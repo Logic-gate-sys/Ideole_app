@@ -24,8 +24,18 @@ class RatingController extends ChangeNotifier {
   /// Get ratings for a specific idea
   List<Rating> getRatings(String ideaId) => _ideaRatings[ideaId] ?? [];
 
-  /// Check if user has already rated this idea
-  bool hasRatedIdea(String ideaId) => (_ideaRatings[ideaId] ?? []).isNotEmpty;
+  /// Check if any ratings exist for this idea
+  bool hasRatings(String ideaId) => (_ideaRatings[ideaId] ?? []).isNotEmpty;
+
+  /// Check whether a specific user has already rated this idea
+  bool hasUserRatedIdea(String ideaId, String? userId) {
+    if (userId == null || userId.isEmpty) {
+      return false;
+    }
+
+    return (_ideaRatings[ideaId] ?? [])
+        .any((rating) => rating.reviewerId == userId);
+  }
 
   // ============================================================
   // Rating Stats Methods

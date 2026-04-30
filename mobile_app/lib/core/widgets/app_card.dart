@@ -40,7 +40,7 @@ class AppCard extends StatelessWidget {
       child: Material(
         color: bg,
         elevation: elevation ?? 0.5,
-        shadowColor: AppColors.outline.withOpacity(0.1),
+        shadowColor: AppColors.outline.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(borderRadius: br),
         child: Container(
           decoration: BoxDecoration(

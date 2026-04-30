@@ -11,7 +11,6 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   late List<_IdeaModel> _ideas;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -20,11 +19,9 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 1));
     setState(() {
       _ideas = _generateMockIdeas();
-      _isLoading = false;
     });
   }
 

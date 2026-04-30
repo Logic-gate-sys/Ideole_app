@@ -1,14 +1,21 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Secure token storage service
 /// Handles storing and retrieving authentication tokens
 class TokenStorage {
-  static const String _tokenKey = 'auth_token';
-  static const String _userIdKey = 'user_id';
-  static const String _emailKey = 'user_email';
+  static const String _sessionNamespace = 'secure_sessions';
+  static const String _tokenKey = '$_sessionNamespace.auth_token';
+  static const String _userIdKey = '$_sessionNamespace.user_id';
+  static const String _emailKey = '$_sessionNamespace.user_email';
+
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   static final TokenStorage _instance = TokenStorage._internal();
-  late SharedPreferences _prefs;
+  String? _token;
+  String? _userId;
+  String? _email;
 
   factory TokenStorage() {
     return _instance;
@@ -18,7 +25,15 @@ class TokenStorage {
 
   /// Initialize the storage (call this once at app startup)
   Future<void> init() async {
-    _prefs = await SharedPreferences.getInstance();
+    final values = await Future.wait([
+      _secureStorage.read(key: _tokenKey),
+      _secureStorage.read(key: _userIdKey),
+      _secureStorage.read(key: _emailKey),
+    ]);
+
+    _token = values[0];
+    _userId = values[1];
+    _email = values[2];
   }
 
   /// Save authentication token and user info
@@ -29,10 +44,14 @@ class TokenStorage {
   }) async {
     try {
       await Future.wait([
-        _prefs.setString(_tokenKey, token),
-        _prefs.setString(_userIdKey, userId),
-        _prefs.setString(_emailKey, email),
+        _secureStorage.write(key: _tokenKey, value: token),
+        _secureStorage.write(key: _userIdKey, value: userId),
+        _secureStorage.write(key: _emailKey, value: email),
       ]);
+
+      _token = token;
+      _userId = userId;
+      _email = email;
     } catch (e) {
       throw Exception('Failed to save token: $e');
     }
@@ -40,29 +59,17 @@ class TokenStorage {
 
   /// Get stored token
   String? getToken() {
-    try {
-      return _prefs.getString(_tokenKey);
-    } catch (e) {
-      return null;
-    }
+    return _token;
   }
 
   /// Get stored user ID
   String? getUserId() {
-    try {
-      return _prefs.getString(_userIdKey);
-    } catch (e) {
-      return null;
-    }
+    return _userId;
   }
 
   /// Get stored email
   String? getEmail() {
-    try {
-      return _prefs.getString(_emailKey);
-    } catch (e) {
-      return null;
-    }
+    return _email;
   }
 
   /// Check if user is authenticated
@@ -84,10 +91,14 @@ class TokenStorage {
   Future<void> clear() async {
     try {
       await Future.wait([
-        _prefs.remove(_tokenKey),
-        _prefs.remove(_userIdKey),
-        _prefs.remove(_emailKey),
+        _secureStorage.delete(key: _tokenKey),
+        _secureStorage.delete(key: _userIdKey),
+        _secureStorage.delete(key: _emailKey),
       ]);
+
+      _token = null;
+      _userId = null;
+      _email = null;
     } catch (e) {
       throw Exception('Failed to clear token: $e');
     }

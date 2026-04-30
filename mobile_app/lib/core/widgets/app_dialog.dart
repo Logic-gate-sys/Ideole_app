@@ -173,7 +173,6 @@ class AppAlertDialog extends StatelessWidget {
                   variant: AppButtonVariant.text,
                   size: AppButtonSize.medium,
                   onPressed: () {
-                    Navigator.pop(context);
                     onNegative?.call();
                   },
                 ),
@@ -183,7 +182,6 @@ class AppAlertDialog extends StatelessWidget {
                   variant: AppButtonVariant.filled,
                   size: AppButtonSize.medium,
                   onPressed: () {
-                    Navigator.pop(context);
                     onPositive?.call();
                   },
                 ),
