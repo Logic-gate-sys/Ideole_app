@@ -25,6 +25,69 @@ export const UserService = {
     return user;
   },
 
+  async searchUsers(options: {
+    query: string;
+    limit?: number;
+    excludeUserId?: string;
+  }) {
+    const query = options.query.trim();
+    if (query.length < 2) {
+      return [];
+    }
+
+    const limit = Math.min(Math.max(options.limit ?? 8, 1), 20);
+
+    const users = await prisma.user.findMany({
+      where: {
+        status: 'ACTIVE',
+        ...(options.excludeUserId
+            ? { id: { not: options.excludeUserId } }
+            : {}),
+        OR: [
+          {
+            username: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            email: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            firstName: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            lastName: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        profileUrl: true,
+        status: true,
+      },
+      orderBy: {
+        username: 'asc',
+      },
+      take: limit,
+    });
+
+    return users;
+  },
+
   async updateUserProfile(userId: string, input: UpdateUserInput) {
     // Check if email already exists (if updating email)
     if (input.email) {

@@ -27,12 +27,6 @@ class IdeaController extends ChangeNotifier {
   String? get successMessage => _successMessage;
   int get currentPage => _currentPage;
 
-  // ============================================================
-  // Visible Ideas Methods
-  // ============================================================
-
-  /// Load visible ideas (public and community)
-  /// Called on app startup and when user navigates to explore tab
   Future<void> loadVisibleIdeas({int page = 1}) async {
     _isLoading = true;
     _error = null;
@@ -45,38 +39,40 @@ class IdeaController extends ChangeNotifier {
         page: page,
         limit: itemsPerPage,
       );
-      _visibleIdeas = ideas;
+
+      if (page == 1) {
+        _visibleIdeas = ideas;
+      } else {
+        _visibleIdeas = [..._visibleIdeas, ...ideas];
+      }
+
       _error = null;
     } on ApiException catch (e) {
       _error = e.message;
-      _visibleIdeas = [];
+      if (page == 1) {
+        _visibleIdeas = [];
+      }
     } catch (e) {
       _error = 'Unexpected error: ${e.toString()}';
-      _visibleIdeas = [];
+      if (page == 1) {
+        _visibleIdeas = [];
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Refresh visible ideas (pull-to-refresh)
   Future<void> refreshVisibleIdeas() async {
     _currentPage = 1;
     await loadVisibleIdeas(page: 1);
   }
 
-  /// Load next page of visible ideas
   Future<void> loadMoreVisibleIdeas() async {
     if (_isLoading) return;
     await loadVisibleIdeas(page: _currentPage + 1);
   }
 
-  // ============================================================
-  // User Ideas Methods
-  // ============================================================
-
-  /// Load current user's own ideas
-  /// Requires authentication
   Future<void> loadUserIdeas({int page = 1}) async {
     _isLoading = true;
     _error = null;
@@ -89,38 +85,40 @@ class IdeaController extends ChangeNotifier {
         page: page,
         limit: itemsPerPage,
       );
-      _userIdeas = ideas;
+
+      if (page == 1) {
+        _userIdeas = ideas;
+      } else {
+        _userIdeas = [..._userIdeas, ...ideas];
+      }
+
       _error = null;
     } on ApiException catch (e) {
       _error = e.message;
-      _userIdeas = [];
+      if (page == 1) {
+        _userIdeas = [];
+      }
     } catch (e) {
       _error = 'Unexpected error: ${e.toString()}';
-      _userIdeas = [];
+      if (page == 1) {
+        _userIdeas = [];
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Refresh user ideas (pull-to-refresh)
   Future<void> refreshUserIdeas() async {
     _currentPage = 1;
     await loadUserIdeas(page: 1);
   }
 
-  /// Load next page of user ideas
   Future<void> loadMoreUserIdeas() async {
     if (_isLoading) return;
     await loadUserIdeas(page: _currentPage + 1);
   }
 
-  // ============================================================
-  // Idea Details Methods
-  // ============================================================
-
-  /// Load and display a specific idea
-  /// Called when user taps on an idea in the list
   Future<void> loadIdeaDetails(String ideaId) async {
     _isLoading = true;
     _error = null;
@@ -142,26 +140,19 @@ class IdeaController extends ChangeNotifier {
     }
   }
 
-  /// Clear currently selected idea
   void clearSelectedIdea() {
     _selectedIdea = null;
     _error = null;
     notifyListeners();
   }
 
-  // ============================================================
-  // Create Idea Methods
-  // ============================================================
-
-  /// Create a new idea
-  /// Shows success/error messages
-  /// Returns true if successful, false otherwise
   Future<bool> createIdea({
     required String title,
-    required String problemText,
-    required String solutionText,
-    required String category,
+    required String description,
     required IdeaVisibility visibility,
+    String? communityId,
+    String? organisationId,
+    List<IdeaCriteriaInput> criteria = const [],
   }) async {
     _isLoading = true;
     _error = null;
@@ -171,14 +162,19 @@ class IdeaController extends ChangeNotifier {
     try {
       final newIdea = await _ideaService.createIdea(
         title: title,
-        problemText: problemText,
-        solutionText: solutionText,
-        category: category,
+        description: description,
         visibility: visibility,
+        communityId: communityId,
+        organisationId: organisationId,
+        criteria: criteria,
       );
 
-      // Add to user ideas list
       _userIdeas.insert(0, newIdea);
+
+      if (newIdea.isPublic || newIdea.isProtected) {
+        _visibleIdeas.insert(0, newIdea);
+      }
+
       _successMessage = 'Idea created successfully!';
       _error = null;
       _isLoading = false;
@@ -197,20 +193,12 @@ class IdeaController extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // Update Idea Methods
-  // ============================================================
-
-  /// Update an existing idea
-  /// Shows success/error messages
-  /// Returns true if successful, false otherwise
   Future<bool> updateIdea(
     String ideaId, {
     String? title,
-    String? problemText,
-    String? solutionText,
-    String? category,
+    String? description,
     IdeaVisibility? visibility,
+    IdeaStage? stage,
   }) async {
     _isLoading = true;
     _error = null;
@@ -221,13 +209,11 @@ class IdeaController extends ChangeNotifier {
       final updatedIdea = await _ideaService.updateIdea(
         ideaId,
         title: title,
-        problemText: problemText,
-        solutionText: solutionText,
-        category: category,
+        description: description,
         visibility: visibility,
+        stage: stage,
       );
 
-      // Update in both lists if present
       final visibleIndex = _visibleIdeas.indexWhere((i) => i.id == ideaId);
       if (visibleIndex >= 0) {
         _visibleIdeas[visibleIndex] = updatedIdea;
@@ -260,38 +246,22 @@ class IdeaController extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // Visibility Toggle Methods
-  // ============================================================
-
-  /// Toggle idea's public visibility
-  /// Shows success/error messages
-  /// Returns true if successful, false otherwise
-  Future<bool> toggleVisibility(String ideaId) async {
+  Future<bool> deleteIdea(String ideaId) async {
     _isLoading = true;
     _error = null;
     _successMessage = null;
     notifyListeners();
 
     try {
-      final updatedIdea = await _ideaService.toggleIdeaVisibility(ideaId);
+      await _ideaService.deleteIdea(ideaId);
 
-      // Update in both lists if present
-      final visibleIndex = _visibleIdeas.indexWhere((i) => i.id == ideaId);
-      if (visibleIndex >= 0) {
-        _visibleIdeas[visibleIndex] = updatedIdea;
-      }
-
-      final userIndex = _userIdeas.indexWhere((i) => i.id == ideaId);
-      if (userIndex >= 0) {
-        _userIdeas[userIndex] = updatedIdea;
-      }
-
+      _visibleIdeas = _visibleIdeas.where((idea) => idea.id != ideaId).toList();
+      _userIdeas = _userIdeas.where((idea) => idea.id != ideaId).toList();
       if (_selectedIdea?.id == ideaId) {
-        _selectedIdea = updatedIdea;
+        _selectedIdea = null;
       }
 
-      _successMessage = 'Visibility updated successfully!';
+      _successMessage = 'Idea deleted successfully!';
       _error = null;
       _isLoading = false;
       notifyListeners();
@@ -309,23 +279,252 @@ class IdeaController extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // Error Handling Methods
-  // ============================================================
+  Future<bool> refreshSelectedIdeaCriteria() async {
+    final current = _selectedIdea;
+    if (current == null) {
+      _error = 'No selected idea found.';
+      notifyListeners();
+      return false;
+    }
 
-  /// Clear error message
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final criteria = await _ideaService.getIdeaCriteria(current.id);
+      _selectedIdea = current.copyWith(criteria: criteria);
+      _successMessage = null;
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (e) {
+      _error = 'Unexpected error: ${e.toString()}';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> createCriteria({
+    required String ideaId,
+    required String name,
+    required String description,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    _successMessage = null;
+    notifyListeners();
+
+    try {
+      final createdCriteria = await _ideaService.createIdeaCriteria(
+        ideaId: ideaId,
+        name: name,
+        description: description,
+      );
+
+      final current = _selectedIdea;
+      if (current != null && current.id == ideaId) {
+        final criteria = [...current.criteria, createdCriteria]
+          ..sort((a, b) => a.order.compareTo(b.order));
+        _selectedIdea = current.copyWith(criteria: criteria);
+      }
+
+      _successMessage = 'Criteria created successfully!';
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (e) {
+      _error = 'Unexpected error: ${e.toString()}';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateCriteria({
+    required String ideaId,
+    required String criteriaId,
+    String? name,
+    String? description,
+    int? order,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    _successMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedCriteria = await _ideaService.updateIdeaCriteria(
+        ideaId: ideaId,
+        criteriaId: criteriaId,
+        name: name,
+        description: description,
+        order: order,
+      );
+
+      final current = _selectedIdea;
+      if (current != null && current.id == ideaId) {
+        final criteria = current.criteria.map((criterion) {
+          if (criterion.id == criteriaId) {
+            return criterion.copyWith(
+              name: updatedCriteria.name,
+              description: updatedCriteria.description,
+              order: updatedCriteria.order,
+            );
+          }
+          return criterion;
+        }).toList()..sort((a, b) => a.order.compareTo(b.order));
+
+        _selectedIdea = current.copyWith(criteria: criteria);
+      }
+
+      _successMessage = 'Criteria updated successfully!';
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (e) {
+      _error = 'Unexpected error: ${e.toString()}';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteCriteria({
+    required String ideaId,
+    required String criteriaId,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    _successMessage = null;
+    notifyListeners();
+
+    try {
+      await _ideaService.deleteIdeaCriteria(
+        ideaId: ideaId,
+        criteriaId: criteriaId,
+      );
+
+      final current = _selectedIdea;
+      if (current != null && current.id == ideaId) {
+        final criteria =
+            current.criteria
+                .where((criterion) => criterion.id != criteriaId)
+                .toList()
+              ..sort((a, b) => a.order.compareTo(b.order));
+
+        _selectedIdea = current.copyWith(criteria: criteria);
+      }
+
+      _successMessage = 'Criteria deleted successfully!';
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (e) {
+      _error = 'Unexpected error: ${e.toString()}';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> reorderCriteria({
+    required String ideaId,
+    required String criteriaId,
+    required bool moveUp,
+  }) async {
+    final current = _selectedIdea;
+    if (current == null || current.id != ideaId) {
+      _error = 'No selected idea found for reordering.';
+      notifyListeners();
+      return false;
+    }
+
+    final ordered = [...current.criteria]
+      ..sort((a, b) => a.order.compareTo(b.order));
+    final currentIndex = ordered.indexWhere(
+      (criterion) => criterion.id == criteriaId,
+    );
+
+    if (currentIndex == -1) {
+      _error = 'Criteria not found.';
+      notifyListeners();
+      return false;
+    }
+
+    final swapIndex = moveUp ? currentIndex - 1 : currentIndex + 1;
+    if (swapIndex < 0 || swapIndex >= ordered.length) {
+      return true;
+    }
+
+    final source = ordered[currentIndex];
+    final target = ordered[swapIndex];
+
+    _isLoading = true;
+    _error = null;
+    _successMessage = null;
+    notifyListeners();
+
+    try {
+      await _ideaService.updateIdeaCriteria(
+        ideaId: ideaId,
+        criteriaId: source.id,
+        order: target.order,
+      );
+      await _ideaService.updateIdeaCriteria(
+        ideaId: ideaId,
+        criteriaId: target.id,
+        order: source.order,
+      );
+
+      final selected = _selectedIdea;
+      if (selected != null && selected.id == ideaId) {
+        final criteria = selected.criteria.map((criterion) {
+          if (criterion.id == source.id) {
+            return criterion.copyWith(order: target.order);
+          }
+          if (criterion.id == target.id) {
+            return criterion.copyWith(order: source.order);
+          }
+          return criterion;
+        }).toList()..sort((a, b) => a.order.compareTo(b.order));
+
+        _selectedIdea = selected.copyWith(criteria: criteria);
+      }
+
+      _successMessage = 'Criteria order updated.';
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      return false;
+    } catch (e) {
+      _error = 'Unexpected error: ${e.toString()}';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();
   }
 
-  /// Clear success message
   void clearSuccessMessage() {
     _successMessage = null;
     notifyListeners();
   }
 
-  /// Clear all messages
   void clearMessages() {
     _error = null;
     _successMessage = null;

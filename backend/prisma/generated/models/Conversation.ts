@@ -29,6 +29,7 @@ export type ConversationMinAggregateOutputType = {
   contextId: string | null
   contextType: $Enums.ContextType | null
   createdAt: Date | null
+  updatedAt: Date | null
   ideaId: string | null
 }
 
@@ -37,6 +38,7 @@ export type ConversationMaxAggregateOutputType = {
   contextId: string | null
   contextType: $Enums.ContextType | null
   createdAt: Date | null
+  updatedAt: Date | null
   ideaId: string | null
 }
 
@@ -45,6 +47,7 @@ export type ConversationCountAggregateOutputType = {
   contextId: number
   contextType: number
   createdAt: number
+  updatedAt: number
   ideaId: number
   _all: number
 }
@@ -55,6 +58,7 @@ export type ConversationMinAggregateInputType = {
   contextId?: true
   contextType?: true
   createdAt?: true
+  updatedAt?: true
   ideaId?: true
 }
 
@@ -63,6 +67,7 @@ export type ConversationMaxAggregateInputType = {
   contextId?: true
   contextType?: true
   createdAt?: true
+  updatedAt?: true
   ideaId?: true
 }
 
@@ -71,6 +76,7 @@ export type ConversationCountAggregateInputType = {
   contextId?: true
   contextType?: true
   createdAt?: true
+  updatedAt?: true
   ideaId?: true
   _all?: true
 }
@@ -152,6 +158,7 @@ export type ConversationGroupByOutputType = {
   contextId: string
   contextType: $Enums.ContextType
   createdAt: Date
+  updatedAt: Date
   ideaId: string | null
   _count: ConversationCountAggregateOutputType | null
   _min: ConversationMinAggregateOutputType | null
@@ -181,6 +188,7 @@ export type ConversationWhereInput = {
   contextId?: Prisma.StringFilter<"Conversation"> | string
   contextType?: Prisma.EnumContextTypeFilter<"Conversation"> | $Enums.ContextType
   createdAt?: Prisma.DateTimeFilter<"Conversation"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Conversation"> | Date | string
   ideaId?: Prisma.StringNullableFilter<"Conversation"> | string | null
   messages?: Prisma.MessageListRelationFilter
   idea?: Prisma.XOR<Prisma.IdeaNullableScalarRelationFilter, Prisma.IdeaWhereInput> | null
@@ -191,6 +199,7 @@ export type ConversationOrderByWithRelationInput = {
   contextId?: Prisma.SortOrder
   contextType?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   ideaId?: Prisma.SortOrderInput | Prisma.SortOrder
   messages?: Prisma.MessageOrderByRelationAggregateInput
   idea?: Prisma.IdeaOrderByWithRelationInput
@@ -204,6 +213,7 @@ export type ConversationWhereUniqueInput = Prisma.AtLeast<{
   contextId?: Prisma.StringFilter<"Conversation"> | string
   contextType?: Prisma.EnumContextTypeFilter<"Conversation"> | $Enums.ContextType
   createdAt?: Prisma.DateTimeFilter<"Conversation"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Conversation"> | Date | string
   ideaId?: Prisma.StringNullableFilter<"Conversation"> | string | null
   messages?: Prisma.MessageListRelationFilter
   idea?: Prisma.XOR<Prisma.IdeaNullableScalarRelationFilter, Prisma.IdeaWhereInput> | null
@@ -214,6 +224,7 @@ export type ConversationOrderByWithAggregationInput = {
   contextId?: Prisma.SortOrder
   contextType?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   ideaId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ConversationCountOrderByAggregateInput
   _max?: Prisma.ConversationMaxOrderByAggregateInput
@@ -228,6 +239,7 @@ export type ConversationScalarWhereWithAggregatesInput = {
   contextId?: Prisma.StringWithAggregatesFilter<"Conversation"> | string
   contextType?: Prisma.EnumContextTypeWithAggregatesFilter<"Conversation"> | $Enums.ContextType
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Conversation"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Conversation"> | Date | string
   ideaId?: Prisma.StringNullableWithAggregatesFilter<"Conversation"> | string | null
 }
 
@@ -236,6 +248,7 @@ export type ConversationCreateInput = {
   contextId: string
   contextType: $Enums.ContextType
   createdAt?: Date | string
+  updatedAt?: Date | string
   messages?: Prisma.MessageCreateNestedManyWithoutConversationInput
   idea?: Prisma.IdeaCreateNestedOneWithoutConversationsInput
 }
@@ -245,6 +258,7 @@ export type ConversationUncheckedCreateInput = {
   contextId: string
   contextType: $Enums.ContextType
   createdAt?: Date | string
+  updatedAt?: Date | string
   ideaId?: string | null
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutConversationInput
 }
@@ -254,6 +268,7 @@ export type ConversationUpdateInput = {
   contextId?: Prisma.StringFieldUpdateOperationsInput | string
   contextType?: Prisma.EnumContextTypeFieldUpdateOperationsInput | $Enums.ContextType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUpdateManyWithoutConversationNestedInput
   idea?: Prisma.IdeaUpdateOneWithoutConversationsNestedInput
 }
@@ -263,6 +278,7 @@ export type ConversationUncheckedUpdateInput = {
   contextId?: Prisma.StringFieldUpdateOperationsInput | string
   contextType?: Prisma.EnumContextTypeFieldUpdateOperationsInput | $Enums.ContextType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ideaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   messages?: Prisma.MessageUncheckedUpdateManyWithoutConversationNestedInput
 }
@@ -272,6 +288,7 @@ export type ConversationCreateManyInput = {
   contextId: string
   contextType: $Enums.ContextType
   createdAt?: Date | string
+  updatedAt?: Date | string
   ideaId?: string | null
 }
 
@@ -280,6 +297,7 @@ export type ConversationUpdateManyMutationInput = {
   contextId?: Prisma.StringFieldUpdateOperationsInput | string
   contextType?: Prisma.EnumContextTypeFieldUpdateOperationsInput | $Enums.ContextType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ConversationUncheckedUpdateManyInput = {
@@ -287,6 +305,7 @@ export type ConversationUncheckedUpdateManyInput = {
   contextId?: Prisma.StringFieldUpdateOperationsInput | string
   contextType?: Prisma.EnumContextTypeFieldUpdateOperationsInput | $Enums.ContextType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ideaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -305,6 +324,7 @@ export type ConversationCountOrderByAggregateInput = {
   contextId?: Prisma.SortOrder
   contextType?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   ideaId?: Prisma.SortOrder
 }
 
@@ -313,6 +333,7 @@ export type ConversationMaxOrderByAggregateInput = {
   contextId?: Prisma.SortOrder
   contextType?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   ideaId?: Prisma.SortOrder
 }
 
@@ -321,6 +342,7 @@ export type ConversationMinOrderByAggregateInput = {
   contextId?: Prisma.SortOrder
   contextType?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   ideaId?: Prisma.SortOrder
 }
 
@@ -394,6 +416,7 @@ export type ConversationCreateWithoutIdeaInput = {
   contextId: string
   contextType: $Enums.ContextType
   createdAt?: Date | string
+  updatedAt?: Date | string
   messages?: Prisma.MessageCreateNestedManyWithoutConversationInput
 }
 
@@ -402,6 +425,7 @@ export type ConversationUncheckedCreateWithoutIdeaInput = {
   contextId: string
   contextType: $Enums.ContextType
   createdAt?: Date | string
+  updatedAt?: Date | string
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutConversationInput
 }
 
@@ -439,6 +463,7 @@ export type ConversationScalarWhereInput = {
   contextId?: Prisma.StringFilter<"Conversation"> | string
   contextType?: Prisma.EnumContextTypeFilter<"Conversation"> | $Enums.ContextType
   createdAt?: Prisma.DateTimeFilter<"Conversation"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Conversation"> | Date | string
   ideaId?: Prisma.StringNullableFilter<"Conversation"> | string | null
 }
 
@@ -447,6 +472,7 @@ export type ConversationCreateWithoutMessagesInput = {
   contextId: string
   contextType: $Enums.ContextType
   createdAt?: Date | string
+  updatedAt?: Date | string
   idea?: Prisma.IdeaCreateNestedOneWithoutConversationsInput
 }
 
@@ -455,6 +481,7 @@ export type ConversationUncheckedCreateWithoutMessagesInput = {
   contextId: string
   contextType: $Enums.ContextType
   createdAt?: Date | string
+  updatedAt?: Date | string
   ideaId?: string | null
 }
 
@@ -479,6 +506,7 @@ export type ConversationUpdateWithoutMessagesInput = {
   contextId?: Prisma.StringFieldUpdateOperationsInput | string
   contextType?: Prisma.EnumContextTypeFieldUpdateOperationsInput | $Enums.ContextType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   idea?: Prisma.IdeaUpdateOneWithoutConversationsNestedInput
 }
 
@@ -487,6 +515,7 @@ export type ConversationUncheckedUpdateWithoutMessagesInput = {
   contextId?: Prisma.StringFieldUpdateOperationsInput | string
   contextType?: Prisma.EnumContextTypeFieldUpdateOperationsInput | $Enums.ContextType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ideaId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -495,6 +524,7 @@ export type ConversationCreateManyIdeaInput = {
   contextId: string
   contextType: $Enums.ContextType
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type ConversationUpdateWithoutIdeaInput = {
@@ -502,6 +532,7 @@ export type ConversationUpdateWithoutIdeaInput = {
   contextId?: Prisma.StringFieldUpdateOperationsInput | string
   contextType?: Prisma.EnumContextTypeFieldUpdateOperationsInput | $Enums.ContextType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUpdateManyWithoutConversationNestedInput
 }
 
@@ -510,6 +541,7 @@ export type ConversationUncheckedUpdateWithoutIdeaInput = {
   contextId?: Prisma.StringFieldUpdateOperationsInput | string
   contextType?: Prisma.EnumContextTypeFieldUpdateOperationsInput | $Enums.ContextType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUncheckedUpdateManyWithoutConversationNestedInput
 }
 
@@ -518,6 +550,7 @@ export type ConversationUncheckedUpdateManyWithoutIdeaInput = {
   contextId?: Prisma.StringFieldUpdateOperationsInput | string
   contextType?: Prisma.EnumContextTypeFieldUpdateOperationsInput | $Enums.ContextType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -556,6 +589,7 @@ export type ConversationSelect<ExtArgs extends runtime.Types.Extensions.Internal
   contextId?: boolean
   contextType?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   ideaId?: boolean
   messages?: boolean | Prisma.Conversation$messagesArgs<ExtArgs>
   idea?: boolean | Prisma.Conversation$ideaArgs<ExtArgs>
@@ -567,6 +601,7 @@ export type ConversationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   contextId?: boolean
   contextType?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   ideaId?: boolean
   idea?: boolean | Prisma.Conversation$ideaArgs<ExtArgs>
 }, ExtArgs["result"]["conversation"]>
@@ -576,6 +611,7 @@ export type ConversationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   contextId?: boolean
   contextType?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   ideaId?: boolean
   idea?: boolean | Prisma.Conversation$ideaArgs<ExtArgs>
 }, ExtArgs["result"]["conversation"]>
@@ -585,10 +621,11 @@ export type ConversationSelectScalar = {
   contextId?: boolean
   contextType?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   ideaId?: boolean
 }
 
-export type ConversationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "contextId" | "contextType" | "createdAt" | "ideaId", ExtArgs["result"]["conversation"]>
+export type ConversationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "contextId" | "contextType" | "createdAt" | "updatedAt" | "ideaId", ExtArgs["result"]["conversation"]>
 export type ConversationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   messages?: boolean | Prisma.Conversation$messagesArgs<ExtArgs>
   idea?: boolean | Prisma.Conversation$ideaArgs<ExtArgs>
@@ -612,6 +649,7 @@ export type $ConversationPayload<ExtArgs extends runtime.Types.Extensions.Intern
     contextId: string
     contextType: $Enums.ContextType
     createdAt: Date
+    updatedAt: Date
     ideaId: string | null
   }, ExtArgs["result"]["conversation"]>
   composites: {}
@@ -1042,6 +1080,7 @@ export interface ConversationFieldRefs {
   readonly contextId: Prisma.FieldRef<"Conversation", 'String'>
   readonly contextType: Prisma.FieldRef<"Conversation", 'ContextType'>
   readonly createdAt: Prisma.FieldRef<"Conversation", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"Conversation", 'DateTime'>
   readonly ideaId: Prisma.FieldRef<"Conversation", 'String'>
 }
     

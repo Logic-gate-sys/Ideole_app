@@ -16,7 +16,7 @@ class AppShadows {
   /// Subtle shadow (for subtle depth)
   static List<BoxShadow> get elevation1 => [
     BoxShadow(
-      color: AppColors.outline.withOpacity(0.08),
+      color: AppColors.outline.withValues(alpha: 0.08),
       blurRadius: 4,
       offset: const Offset(0, 1),
     ),
@@ -25,7 +25,7 @@ class AppShadows {
   /// Light shadow (for cards, chips)
   static List<BoxShadow> get elevation2 => [
     BoxShadow(
-      color: AppColors.outline.withOpacity(0.1),
+      color: AppColors.outline.withValues(alpha: 0.1),
       blurRadius: _blur,
       offset: const Offset(0, 2),
     ),
@@ -34,7 +34,7 @@ class AppShadows {
   /// Medium shadow (for standard containers)
   static List<BoxShadow> get elevation3 => [
     BoxShadow(
-      color: AppColors.outline.withOpacity(0.12),
+      color: AppColors.outline.withValues(alpha: 0.12),
       blurRadius: _blur,
       offset: const Offset(0, 4),
     ),
@@ -43,7 +43,7 @@ class AppShadows {
   /// High shadow (for floating elements)
   static List<BoxShadow> get elevation4 => [
     BoxShadow(
-      color: AppColors.outline.withOpacity(0.14),
+      color: AppColors.outline.withValues(alpha: 0.14),
       blurRadius: _largeBlur,
       offset: const Offset(0, 6),
     ),
@@ -52,7 +52,7 @@ class AppShadows {
   /// Very high shadow (for modals, dialogs)
   static List<BoxShadow> get elevation5 => [
     BoxShadow(
-      color: AppColors.outline.withOpacity(0.16),
+      color: AppColors.outline.withValues(alpha: 0.16),
       blurRadius: _largeBlur,
       offset: const Offset(0, 8),
     ),
@@ -72,7 +72,7 @@ class AppShadows {
   /// Bottom sheet shadow
   static List<BoxShadow> get bottomSheetShadow => [
     BoxShadow(
-      color: AppColors.outline.withOpacity(0.12),
+      color: AppColors.outline.withValues(alpha: 0.12),
       blurRadius: _largeBlur,
       offset: const Offset(0, -4),
     ),
@@ -84,7 +84,7 @@ class AppShadows {
   /// Nnav bar shadow (bottom navigation)
   static List<BoxShadow> get navBarShadow => [
     BoxShadow(
-      color: AppColors.outline.withOpacity(0.1),
+      color: AppColors.outline.withValues(alpha: 0.1),
       blurRadius: _largeBlur,
       offset: const Offset(0, -2),
     ),
@@ -106,7 +106,7 @@ class AppShadows {
   /// This approximates an inset shadow using a soft shadow below
   static List<BoxShadow> get insetShadow => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.05),
+      color: Colors.black.withValues(alpha: 0.05),
       blurRadius: 4,
       offset: const Offset(0, -2),  // Negative offset to simulate inset
       spreadRadius: 1,
@@ -118,7 +118,7 @@ class AppShadows {
   /// Primary accent shadow
   static List<BoxShadow> get primaryShadow => [
     BoxShadow(
-      color: AppColors.primary.withOpacity(0.2),
+      color: AppColors.primary.withValues(alpha: 0.2),
       blurRadius: _blur,
       offset: const Offset(0, 4),
     ),
@@ -127,7 +127,7 @@ class AppShadows {
   /// Error/Alert shadow
   static List<BoxShadow> get errorShadow => [
     BoxShadow(
-      color: AppColors.error.withOpacity(0.15),
+      color: AppColors.error.withValues(alpha: 0.15),
       blurRadius: _blur,
       offset: const Offset(0, 4),
     ),
@@ -136,7 +136,7 @@ class AppShadows {
   /// Success shadow
   static List<BoxShadow> get successShadow => [
     BoxShadow(
-      color: AppColors.success.withOpacity(0.15),
+      color: AppColors.success.withValues(alpha: 0.15),
       blurRadius: _blur,
       offset: const Offset(0, 4),
     ),
@@ -147,7 +147,7 @@ class AppShadows {
   /// Faded shadow (30% opacity)
   static List<BoxShadow> get shadowFaded => [
     BoxShadow(
-      color: AppColors.outline.withOpacity(0.03),
+      color: AppColors.outline.withValues(alpha: 0.03),
       blurRadius: _blur,
       offset: const Offset(0, 2),
     ),
@@ -156,7 +156,7 @@ class AppShadows {
   /// Emphasized shadow (high opacity)
   static List<BoxShadow> get shadowEmphasized => [
     BoxShadow(
-      color: AppColors.outline.withOpacity(0.25),
+      color: AppColors.outline.withValues(alpha: 0.25),
       blurRadius: _largeBlur,
       offset: const Offset(0, 12),
     ),

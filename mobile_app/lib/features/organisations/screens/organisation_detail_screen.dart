@@ -77,6 +77,7 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen>
             // Header section
             SliverAppBar(
               backgroundColor: AppColors.surface,
+              toolbarHeight: 0,
               collapsedHeight: 0,
               expandedHeight: 200,
               floating: false,
@@ -202,8 +203,8 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.primaryContainer.withOpacity(0.2),
+            AppColors.primary.withValues(alpha: 0.1),
+            AppColors.primaryContainer.withValues(alpha: 0.2),
           ],
         ),
       ),
@@ -256,7 +257,7 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen>
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: tierColors[tier]?.withOpacity(0.1),
+        color: tierColors[tier]?.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
           color: tierColors[tier] ?? AppColors.outline,
@@ -293,7 +294,7 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen>
                   height: 48,
                   decoration: BoxDecoration(
                     color: _getVisibilityColor(community.visibility)
-                        .withOpacity(0.1),
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Icon(

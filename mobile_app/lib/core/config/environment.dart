@@ -5,11 +5,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 
-enum AppEnv {
-  dev,
-  staging,
-  production,
-}
+enum AppEnv { dev, staging, production }
 
 class Environment {
   static const AppEnv appEnv = AppEnv.dev; // Change this for deployment
@@ -39,6 +35,19 @@ class Environment {
   /// Enable debug logging
   static bool get isDebug {
     return appEnv == AppEnv.dev;
+  }
+
+  /// Base websocket URL used for realtime channels.
+  static String get socketBaseUrl {
+    final apiUri = Uri.parse(baseUrl);
+    final scheme = apiUri.scheme == 'https' ? 'wss' : 'ws';
+
+    return Uri(
+      scheme: scheme,
+      host: apiUri.host,
+      port: apiUri.hasPort ? apiUri.port : null,
+      path: '',
+    ).toString();
   }
 
   /// API request timeout in seconds

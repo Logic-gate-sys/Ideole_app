@@ -4,10 +4,10 @@ import { generateAccessToken, generateRefreshToken, verifyToken } from '../lib/j
 import { env } from '../../env.ts';
 
 export const AuthControllers = {
-  async register(req: Request, res:Response){
-    try{
-      const body = req.body; 
-      const newUser = await AuthService.registerUser(body); 
+    async register(req: Request, res:Response){
+      try{
+        const body = req.body; 
+        const newUser = await AuthService.registerUser(body); 
       // access and refresh token 
       const payload = {
         userId: newUser.id,
@@ -30,11 +30,23 @@ export const AuthControllers = {
         data: newUser,
         token: acessToken
       })
-    }catch(err){
-        return res.status(500).json({
-            message:'error',
-            details: err.message
-        })
+      }catch(err: any){
+          const message = err?.message ?? 'Unable to register user';
+          if (
+            message === 'Email already registered' ||
+            message === 'Username already taken' ||
+            message === 'Account already exists'
+          ) {
+            return res.status(409).json({
+              message: 'error',
+              details: message,
+            });
+          }
+
+          return res.status(500).json({
+              message:'error',
+              details: message
+          })
     }
     
   },

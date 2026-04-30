@@ -5,7 +5,6 @@ import '../../../core/theme/index.dart';
 import '../../../core/widgets/index.dart';
 import '../controllers/auth_controller.dart';
 import '../utils/validators.dart';
-import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -21,8 +20,6 @@ class _SignInScreenState extends State<SignInScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   late AnimationController _animationController;
-  bool _showPassword = false;
-  bool _rememberMe = false;
 
   @override
   void initState() {
@@ -56,7 +53,7 @@ class _SignInScreenState extends State<SignInScreen>
       );
 
       if (mounted && user != null) {
-        Navigator.of(context).pushReplacementNamed('/');
+        FocusScope.of(context).unfocus();
       }
     } catch (e) {
       // Error is handled by controller
@@ -78,20 +75,10 @@ class _SignInScreenState extends State<SignInScreen>
     }
   }
 
-  void _handleForgotPassword() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const ForgotPasswordScreen(),
-      ),
-    );
-  }
-
   void _handleSignUpNavigation() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const SignUpScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const SignUpScreen()));
   }
 
   @override
@@ -111,27 +98,15 @@ class _SignInScreenState extends State<SignInScreen>
                 children: [
                   // Header with animation
                   _buildHeader(),
-                  SizedBox(height: AppSpacing.xxxl),
+                  SizedBox(height: AppSpacing.lg),
+
+                  // Compact app highlights
+                  _buildQuickHighlights(),
+                  SizedBox(height: AppSpacing.xl),
 
                   // Form
                   _buildForm(authController),
-                  SizedBox(height: AppSpacing.lg),
-
-                  // Forgot Password Link
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: _handleForgotPassword,
-                      child: Text(
-                        'Forgot password?',
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: AppColors.primary,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.xxxl),
+                  SizedBox(height: AppSpacing.xl),
 
                   // Sign In Button
                   AppButton(
@@ -140,18 +115,9 @@ class _SignInScreenState extends State<SignInScreen>
                     size: AppButtonSize.large,
                     isFullWidth: true,
                     isLoading: authController.isLoading,
-                    onPressed:
-                        authController.isLoading ? null : _handleSignIn,
+                    onPressed: authController.isLoading ? null : _handleSignIn,
                   ),
-                  SizedBox(height: AppSpacing.xl),
-
-                  // Divider with text
-                  _buildDivider(),
-                  SizedBox(height: AppSpacing.xl),
-
-                  // Social Login Buttons
-                  _buildSocialButtons(),
-                  SizedBox(height: AppSpacing.xxxl),
+                  SizedBox(height: AppSpacing.lg),
 
                   // Sign Up Link
                   _buildSignUpPrompt(),
@@ -165,30 +131,31 @@ class _SignInScreenState extends State<SignInScreen>
   }
 
   Widget _buildHeader() {
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(0, -0.3),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-      ),
-      child: Opacity(
-        opacity: _animationController.value,
+    final animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    );
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, -0.2),
+          end: Offset.zero,
+        ).animate(animation),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Welcome Back',
-              style: AppTextStyles.displayLarge.copyWith(
-                height: 1.2,
-              ),
+              'Welcome back',
+              style: AppTextStyles.displayLarge.copyWith(height: 1.15),
             ),
-            SizedBox(height: AppSpacing.sm),
+            SizedBox(height: AppSpacing.xs),
             Text(
-              'Sign in to your Ideole account to continue exploring and collaborating',
+              'Sign in to continue.',
               style: AppTextStyles.bodyLarge.copyWith(
                 color: AppColors.onSurfaceVariant,
-                height: 1.5,
+                height: 1.35,
               ),
             ),
           ],
@@ -211,7 +178,7 @@ class _SignInScreenState extends State<SignInScreen>
                 color: AppColors.errorContainer,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                  color: AppColors.error.withOpacity(0.3),
+                  color: AppColors.error.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -239,9 +206,13 @@ class _SignInScreenState extends State<SignInScreen>
 
           // Email field
           AppInput(
-            label: 'Email Address',
+            label: 'Email',
             hint: 'you@example.com',
             keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            onEditingComplete: () {
+              FocusScope.of(context).nextFocus();
+            },
             controller: _emailController,
             validator: AuthValidators.validateEmail,
           ),
@@ -250,8 +221,10 @@ class _SignInScreenState extends State<SignInScreen>
           // Password field with toggle
           AppInput(
             label: 'Password',
-            hint: 'Enter your password',
-            obscureText: !_showPassword,
+            hint: 'Your password',
+            obscureText: true,
+            textInputAction: TextInputAction.done,
+            onEditingComplete: _handleSignIn,
             controller: _passwordController,
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -259,129 +232,49 @@ class _SignInScreenState extends State<SignInScreen>
               }
               return null;
             },
-            suffixIcon: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showPassword = !_showPassword;
-                });
-              },
-              child: Icon(
-                _showPassword ? Icons.visibility : Icons.visibility_off,
-                color: AppColors.onSurfaceVariant,
-                size: 20,
-              ),
-            ),
           ),
           SizedBox(height: AppSpacing.md),
-
-          // Remember me checkbox
-          Row(
-            children: [
-              SizedBox(
-                width: 18,
-                height: 18,
-                child: Checkbox(
-                  value: _rememberMe,
-                  onChanged: (value) {
-                    setState(() {
-                      _rememberMe = value ?? false;
-                    });
-                  },
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.xs),
-                  ),
-                ),
-              ),
-              SizedBox(width: AppSpacing.sm),
-              Text(
-                'Remember me',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.onSurface,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildDivider() {
-    return Row(
+  Widget _buildQuickHighlights() {
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
       children: [
-        Expanded(
-          child: Divider(
-            color: AppColors.outlineVariant,
-            height: 1,
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Text(
-            'or',
-            style: AppTextStyles.labelMedium.copyWith(
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Divider(
-            color: AppColors.outlineVariant,
-            height: 1,
-          ),
-        ),
+        _buildHighlightChip(Icons.lightbulb_outline, 'Ideas'),
+        _buildHighlightChip(Icons.group_outlined, 'Teams'),
+        _buildHighlightChip(Icons.analytics_outlined, 'Ratings'),
       ],
     );
   }
 
-  Widget _buildSocialButtons() {
-    return Column(
-      children: [
-        // Google
-        AppButton(
-          label: 'Continue with Google',
-          variant: AppButtonVariant.outlined,
-          size: AppButtonSize.large,
-          isFullWidth: true,
-          icon: Icons.g_mobiledata,
-          onPressed: () {
-            // Handle Google sign in
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Google Sign-In coming soon',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.onSecondary),
-                ),
-                backgroundColor: AppColors.secondary,
-              ),
-            );
-          },
-        ),
-        SizedBox(height: AppSpacing.md),
-
-        // Apple
-        AppButton(
-          label: 'Continue with Apple',
-          variant: AppButtonVariant.outlined,
-          size: AppButtonSize.large,
-          isFullWidth: true,
-          icon: Icons.apple,
-          onPressed: () {
-            // Handle Apple sign in
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Apple Sign-In coming soon',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.onSecondary),
-                ),
-                backgroundColor: AppColors.secondary,
-              ),
-            );
-          },
-        ),
-      ],
+  Widget _buildHighlightChip(IconData icon, String label) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: AppColors.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.primary),
+          SizedBox(width: AppSpacing.xs),
+          Text(
+            label,
+            style: AppTextStyles.labelMedium.copyWith(
+              color: AppColors.onSurface,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -389,11 +282,9 @@ class _SignInScreenState extends State<SignInScreen>
     return Center(
       child: RichText(
         text: TextSpan(
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.onSurface,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.onSurface),
           children: [
-            const TextSpan(text: 'Don\'t have an account? '),
+            const TextSpan(text: 'New to Ideole? '),
             TextSpan(
               text: 'Sign up',
               style: AppTextStyles.bodyMedium.copyWith(
